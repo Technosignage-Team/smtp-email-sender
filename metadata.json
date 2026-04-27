@@ -1,0 +1,5 @@
+{
+  "name": "SMTP Email Sender",
+  "description": "A simple full-stack application to send emails via SMTP with a Node.js backend and a clean HTML/JS interface.",
+  "requestFramePermissions": []
+}
