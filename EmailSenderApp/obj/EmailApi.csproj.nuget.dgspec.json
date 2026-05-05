@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\TS Admin\\Downloads\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj": {}
+    "E:\\Email sender\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\TS Admin\\Downloads\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj": {
+    "E:\\Email sender\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\TS Admin\\Downloads\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj",
-        "projectName": "EmailApi",
-        "projectPath": "C:\\Users\\TS Admin\\Downloads\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj",
-        "packagesPath": "C:\\Users\\TS Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\TS Admin\\Downloads\\smtp-email-sender\\EmailSenderApp\\obj\\",
+        "projectUniqueName": "E:\\Email sender\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj",
+        "projectName": "EmailSenderApi",
+        "projectPath": "E:\\Email sender\\smtp-email-sender\\EmailSenderApp\\EmailApi.csproj",
+        "packagesPath": "C:\\Users\\MEF\\.nuget\\packages\\",
+        "outputPath": "E:\\Email sender\\smtp-email-sender\\EmailSenderApp\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\TS Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\MEF\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,6 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -44,12 +45,20 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.4.0, )"
@@ -66,24 +75,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[8.0.22, 8.0.22]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.22, 8.0.22]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -92,7 +83,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
