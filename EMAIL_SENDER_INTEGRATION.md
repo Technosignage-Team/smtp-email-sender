@@ -8,10 +8,10 @@ We have a centralized email-sending HTTP API. Any app can send an email by POSTi
 a `multipart/form-data` request with an API key. Every call is logged on our side.
 
 ## Credentials (provided by the EmailSender admin)
-- **Endpoint:** `http://EmailSender-api.technosignage.com/api/email/send`
-- **Bulk endpoint (one separate email per recipient):** `http://EmailSender-api.technosignage.com/api/email/send-bulk`
+- **Endpoint:** `https://EmailSender-api.technosignage.com/api/email/send`
+- **Bulk endpoint (one separate email per recipient):** `https://EmailSender-api.technosignage.com/api/email/send-bulk`
 - **API Key (header `X-Api-Key`):** `esk_rlEjjRpRCvPQy0Eyl1hnCtPRyHotTlB5rCKpqXqJG6I`
-- **Protocol:** plain HTTP (no HTTPS).
+- **Protocol:** HTTPS.
 
 ## Request contract
 
@@ -80,7 +80,7 @@ public sealed class EmailSenderClient : IEmailSenderClient
     public EmailSenderClient(HttpClient http, IConfiguration config)
     {
         _http = http;
-        _http.BaseAddress = new Uri(config["EmailSender:BaseUrl"]!); // http://EmailSender-api.technosignage.com
+        _http.BaseAddress = new Uri(config["EmailSender:BaseUrl"]!); // https://EmailSender-api.technosignage.com
         _apiKey = config["EmailSender:ApiKey"]!;                      // esk_...
     }
 
@@ -135,7 +135,7 @@ In `appsettings.json`:
 
 ```json
 "EmailSender": {
-  "BaseUrl": "http://EmailSender-api.technosignage.com",
+  "BaseUrl": "https://EmailSender-api.technosignage.com",
   "ApiKey": "esk_REPLACE_WITH_KEY_GIVEN_TO_YOU",
   "AdminRecipients": [ "admin1@yourcompany.com", "admin2@yourcompany.com" ]
 }
@@ -190,7 +190,7 @@ public async Task HandleVendorRegisteredAsync(Vendor vendor, CancellationToken c
 ```js
 import FormData from "form-data";
 
-const BASE   = "http://EmailSender-api.technosignage.com";
+const BASE   = "https://EmailSender-api.technosignage.com";
 const APIKEY = "esk_REPLACE_WITH_KEY_GIVEN_TO_YOU";
 
 async function sendEmail({ recipients, subject, html, bulk = false, attachments = [] }) {
@@ -230,7 +230,7 @@ await sendEmail({
 ## Sanity-test with curl before integrating
 
 ```bash
-curl -X POST http://EmailSender-api.technosignage.com/api/email/send \
+curl -X POST https://EmailSender-api.technosignage.com/api/email/send \
   -H "X-Api-Key: esk_REPLACE_WITH_KEY_GIVEN_TO_YOU" \
   -F "Subject=Smoke test" \
   -F "Body=<p>Hello</p>" \

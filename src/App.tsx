@@ -41,7 +41,7 @@ const TEMPLATES: EmailTemplate[] = [
 
 type View = 'send' | 'apps';
 
-// Production: set VITE_API_BASE_URL=http://EmailSender-api.technosignage.com at build time.
+// Production: set VITE_API_BASE_URL=https://EmailSender-api.technosignage.com at build time.
 // Development: leave empty to use the Vite dev proxy.
 const API_BASE: string = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
 

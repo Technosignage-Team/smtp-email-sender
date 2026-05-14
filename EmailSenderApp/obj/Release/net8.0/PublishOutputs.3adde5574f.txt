@@ -1,9 +1,14 @@
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\web.config
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\appsettings.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish\appsettings.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish\EmailSenderApi.deps.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish\EmailSenderApi.runtimeconfig.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.deps.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.runtimeconfig.json
