@@ -108,6 +108,82 @@ namespace EmailApi.Controllers
         }
 
         /// <summary>
+        /// AI-friendly JSON endpoint. Accepts application/json so it works out-of-the-box
+        /// with Gemini function calling, OpenAI Actions, Claude tools, fetch(), and axios.
+        /// Supports the X-Api-Key header OR an "apiKey" field inside the JSON body.
+        /// </summary>
+        [HttpPost("send-ai")]
+        [Consumes("application/json")]
+        [Produces("application/json")]
+        public async Task<IActionResult> SendAiEmail([FromBody] SendAiEmailRequest request)
+        {
+            // ---- API key resolution (header first, body fallback) ----
+            var apiKey = Request.Headers.TryGetValue(ApiKeyHeader, out var h) && !string.IsNullOrWhiteSpace(h)
+                ? h.ToString().Trim()
+                : request.ApiKey?.Trim();
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return Unauthorized(new { success = false, error = "Missing API key. Send it in the X-Api-Key header or apiKey JSON field." });
+
+            var app = await _db.Apps.FirstOrDefaultAsync(a => a.AppKey == apiKey);
+            if (app == null)
+                return Unauthorized(new { success = false, error = "Invalid API key." });
+            if (!app.IsActive)
+                return StatusCode(StatusCodes.Status403Forbidden, new { success = false, error = "This app has been deactivated." });
+
+            // ---- Validate payload ----
+            if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
+            {
+                await LogRawAsync(app, request.Subject, request.Body, request.Recipients,
+                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                    status: "Rejected", error: "Subject and Body are required.", durationMs: 0);
+                return BadRequest(new { success = false, error = "Subject and Body are required." });
+            }
+
+            if (request.Recipients == null || request.Recipients.Count == 0)
+            {
+                await LogRawAsync(app, request.Subject, request.Body, new List<string>(),
+                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                    status: "Rejected", error: "At least one recipient is required.", durationMs: 0);
+                return BadRequest(new { success = false, error = "At least one recipient is required." });
+            }
+
+            var recipients = request.Recipients
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // ---- Send + log ----
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                await _emailService.SendEmailAsync(request.Subject, request.Body, recipients, new List<EmailAttachment>(), request.IsHtml);
+                sw.Stop();
+
+                await LogRawAsync(app, request.Subject, request.Body, recipients,
+                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                    status: "Sent", error: null, durationMs: (int)sw.ElapsedMilliseconds);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Email sent successfully",
+                    recipientCount = recipients.Count,
+                    appName = app.AppName,
+                });
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                await LogRawAsync(app, request.Subject, request.Body, recipients,
+                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                    status: "Failed", error: ex.Message, durationMs: (int)sw.ElapsedMilliseconds);
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Legacy JSON endpoint kept for backward compatibility. Also requires X-Api-Key.
         /// </summary>
         [HttpPost("send-bulk")]

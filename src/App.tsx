@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { EmailSender, type EmailTemplate } from './email-sender';
 import { AppsManager } from './apps-manager';
+import { AiChat } from './ai-chat';
 
 const TEMPLATES: EmailTemplate[] = [
   {
@@ -39,7 +40,7 @@ const TEMPLATES: EmailTemplate[] = [
   },
 ];
 
-type View = 'send' | 'apps';
+type View = 'send' | 'apps' | 'ai';
 
 // Production: set VITE_API_BASE_URL=https://EmailSender-api.technosignage.com at build time.
 // Development: leave empty to use the Vite dev proxy.
@@ -117,6 +118,7 @@ export default function App() {
       <div style={navWrap}>
         <button style={navBtn(view === 'send')} onClick={() => setView('send')}>Send Email</button>
         <button style={navBtn(view === 'apps')} onClick={() => setView('apps')}>App Management</button>
+        <button style={navBtn(view === 'ai')}   onClick={() => setView('ai')}>AI Email Chat</button>
         <span style={{ flex: 1 }} />
         {view === 'send' && (
           <input
@@ -135,7 +137,7 @@ export default function App() {
         </button>
       </div>
 
-      {view === 'send' ? (
+      {view === 'send' && (
         <EmailSender
           apiBaseUrl={API_BASE}
           apiKey={apiKey}
@@ -145,9 +147,9 @@ export default function App() {
           onSuccess={(r) => console.log('[EmailSender] success:', r)}
           onError={(e) => console.error('[EmailSender] error:', e)}
         />
-      ) : (
-        <AppsManager apiBaseUrl={API_BASE} theme={theme} />
       )}
+      {view === 'apps' && <AppsManager apiBaseUrl={API_BASE} theme={theme} />}
+      {view === 'ai'   && <AiChat apiBaseUrl={API_BASE} apiKey={apiKey} theme={theme} />}
     </div>
   );
 }

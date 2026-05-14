@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Email Sender</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #16213e;
+      border-bottom: 1px solid #2d3748;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .badge { background: #4f46e5; color: #fff; font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+    #config {
+      background: #1a1a2e;
+      border-bottom: 1px solid #2d3748;
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .cfg { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+    .cfg label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+    .cfg input {
+      background: #0f0f1a; border: 1px solid #374151; border-radius: 8px;
+      color: #e2e8f0; padding: 7px 11px; font-size: 0.85rem; outline: none;
+    }
+    .cfg input:focus { border-color: #4f46e5; }
+    #cfg-status {
+      font-size: 0.78rem; padding: 6px 10px; border-radius: 6px; align-self: flex-end; white-space: nowrap;
+    }
+    .s-ok   { background: #064e3b; color: #6ee7b7; }
+    .s-err  { background: #7f1d1d; color: #fca5a5; }
+    .s-idle { background: #1e293b; color: #94a3b8; }
+
+    #chat {
+      flex: 1; display: flex; flex-direction: column;
+      max-width: 820px; width: 100%; margin: 0 auto;
+      padding: 20px 16px 0; gap: 14px; overflow-y: auto;
+    }
+    .msg { display: flex; gap: 9px; animation: fi .2s ease; }
+    @keyframes fi { from { opacity:0; transform:translateY(5px) } to { opacity:1; transform:translateY(0) } }
+    .msg.user { flex-direction: row-reverse; }
+    .av {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: grid; place-items: center; font-size: .95rem; flex-shrink: 0;
+    }
+    .msg.user .av  { background: #4f46e5; }
+    .msg.ai   .av  { background: #1e293b; }
+    .msg.ok   .av  { background: #064e3b; }
+    .msg.err  .av  { background: #7f1d1d; }
+    .bub {
+      max-width: 74%; padding: 11px 15px; border-radius: 14px;
+      font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    }
+    .msg.user .bub { background: #4f46e5; color: #fff; border-bottom-right-radius: 3px; }
+    .msg.ai   .bub { background: #1e293b; color: #e2e8f0; border-bottom-left-radius: 3px; }
+    .msg.ok   .bub { background: #064e3b; color: #a7f3d0; border-bottom-left-radius: 3px; }
+    .msg.err  .bub { background: #7f1d1d; color: #fca5a5; border-bottom-left-radius: 3px; }
+
+    .tool-box {
+      font-family: monospace; font-size: 0.75rem;
+      background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; padding: 9px 13px; color: #7dd3fc;
+      max-width: 74%; margin-top: 4px;
+    }
+    .tool-box .lbl { color: #64748b; font-size: 0.68rem; margin-bottom: 3px; }
+
+    .typing { display: flex; gap: 4px; padding: 6px 10px; }
+    .typing span { width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; animation: b .8s infinite; }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes b { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+    #chips { text-align: center; color: #475569; font-size: 0.78rem; margin-top: 4px; }
+    #chips span {
+      background: #1e293b; border: 1px solid #374151; padding: 3px 10px;
+      border-radius: 999px; margin: 3px; cursor: pointer; display: inline-block;
+      transition: border-color .15s, color .15s;
+    }
+    #chips span:hover { border-color: #4f46e5; color: #a5b4fc; }
+
+    #spacer { height: 14px; flex-shrink: 0; }
+
+    #bar-wrap { position: sticky; bottom: 0; width: 100%; background: #0f0f1a; }
+    #bar {
+      max-width: 820px; width: 100%; margin: 0 auto;
+      background: #1a1a2e; border-top: 1px solid #2d3748;
+      padding: 13px 20px; display: flex; gap: 9px;
+    }
+    #inp {
+      flex: 1; background: #0f0f1a; border: 1px solid #374151;
+      border-radius: 11px; color: #e2e8f0; padding: 9px 14px;
+      font-size: 0.875rem; resize: none; outline: none;
+      min-height: 42px; max-height: 130px; overflow-y: auto;
+    }
+    #inp:focus { border-color: #4f46e5; }
+    #btn {
+      background: #4f46e5; color: #fff; border: none; border-radius: 11px;
+      padding: 0 18px; font-size: .95rem; font-weight: 600; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    #btn:hover:not(:disabled) { background: #4338ca; }
+    #btn:active:not(:disabled) { transform: scale(.97); }
+    #btn:disabled { background: #374151; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.4rem">✉️</span>
+  <h1>AI Email Sender</h1>
+  <span class="badge">Gemini + EmailSender API</span>
+</header>
+
+<div id="config">
+  <div class="cfg" style="flex:2;min-width:260px">
+    <label>Gemini API Key
+      <a href="https://aistudio.google.com/app/apikey" target="_blank"
+         style="color:#818cf8;font-weight:400;margin-left:4px;font-size:.65rem">get key ↗</a>
+    </label>
+    <input type="password" id="gkey" placeholder="AIza…" autocomplete="off" />
+  </div>
+  <div class="cfg">
+    <label>EmailSender API Key</label>
+    <input type="password" id="ekey"
+           value="esk_rlEjjRpRCvPQy0Eyl1hnCtPRyHotTlB5rCKpqXqJG6I" autocomplete="off" />
+  </div>
+  <div class="cfg" style="flex:2;min-width:220px">
+    <label>EmailSender Base URL</label>
+    <input type="text" id="ebase" value="https://EmailSender-api.technosignage.com" />
+  </div>
+  <div id="cfg-status" class="s-idle">Enter Gemini key</div>
+</div>
+
+<div id="chat">
+  <div class="msg ai">
+    <div class="av">🤖</div>
+    <div class="bub">Hi! I'm your AI email assistant powered by Gemini.
+
+Just tell me what you'd like to send. For example:
+• "Send a welcome email to john@example.com"
+• "Email alice@co.com — subject: Meeting, body: See you at 3pm"
+• "Send a professional HTML email to team@example.com about the product launch"
+
+Enter your <strong>Gemini API key</strong> above to start.</div>
+  </div>
+  <div id="chips">
+    <strong style="color:#334155">Try:</strong>
+    <span onclick="chip(this)">Send a test email to me@example.com</span>
+    <span onclick="chip(this)">Email hello@example.com — subject: Hello, body: Testing AI email sender</span>
+    <span onclick="chip(this)">Send a welcome email to new@user.com</span>
+  </div>
+  <div id="spacer"></div>
+</div>
+
+<div id="bar-wrap">
+  <div id="bar">
+    <textarea id="inp" rows="1"
+      placeholder="Describe the email you want to send…"
+      onkeydown="onKey(event)"></textarea>
+    <button id="btn" onclick="send()">Send ➤</button>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const GEMINI_MODEL = "gemini-2.0-flash";
+
+const SYSTEM = `You are a helpful email assistant. When the user asks to send an email, always call the send_email function.
+Rules:
+- Extract recipients, subject, and body from the user message.
+- If any required field is missing, ask the user before calling the function.
+- Write a clean, professional HTML email body by default unless the user asks for plain text.
+- Never invent email addresses — use only what the user provides.
+- If the user says "me" or "myself", ask for their actual email address.
+- After the function result arrives, report success or failure clearly.`;
+
+const TOOL = {
+  function_declarations: [{
+    name: "send_email",
+    description: "Send an email to one or more recipients. Call this whenever the user wants to send an email.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        recipients: {
+          type: "ARRAY",
+          items: { type: "STRING" },
+          description: "List of recipient email addresses"
+        },
+        subject: { type: "STRING", description: "Plain-text email subject" },
+        body:    { type: "STRING", description: "Email body — use HTML by default" },
+        isHtml:  { type: "BOOLEAN", description: "True if body is HTML (default). False for plain text." }
+      },
+      required: ["recipients", "subject", "body"]
+    }
+  }]
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+const history = [];
+let busy = false;
+
+// ── DOM helpers ──────────────────────────────────────────────────────────────
+const chatEl  = document.getElementById("chat");
+const inpEl   = document.getElementById("inp");
+const btnEl   = document.getElementById("btn");
+const statusEl= document.getElementById("cfg-status");
+const spacer  = document.getElementById("spacer");
+
+function cfg() {
+  return {
+    gkey:  document.getElementById("gkey").value.trim(),
+    ekey:  document.getElementById("ekey").value.trim(),
+    ebase: document.getElementById("ebase").value.trim(),
+  };
+}
+
+function setStatus(t, cls) { statusEl.textContent = t; statusEl.className = cls; }
+
+["gkey","ekey","ebase"].forEach(id =>
+  document.getElementById(id).addEventListener("input", () => {
+    const c = cfg();
+    if (!c.gkey || !c.ekey || !c.ebase) setStatus("⚠ Fill all fields", "s-err");
+    else setStatus("✓ Config ready", "s-ok");
+  })
+);
+
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function addMsg(type, text) {
+  const icons = { user:"👤", ai:"🤖", ok:"✅", err:"❌" };
+  const d = document.createElement("div");
+  d.className = `msg ${type}`;
+  d.innerHTML = `<div class="av">${icons[type]||"🤖"}</div><div class="bub">${esc(text)}</div>`;
+  chatEl.insertBefore(d, spacer);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addToolBox(args) {
+  const d = document.createElement("div");
+  d.className = "msg ai";
+  d.innerHTML = `<div class="av">⚙️</div>
+    <div class="tool-box">
+      <div class="lbl">📤 Calling send_email…</div>To: ${esc(args.recipients?.join(", "))}
+Subject: ${esc(args.subject)}
+HTML: ${args.isHtml !== false}</div>`;
+  chatEl.insertBefore(d, spacer);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addTyping() {
+  const d = document.createElement("div");
+  d.className = "msg ai"; d.id = "typing";
+  d.innerHTML = `<div class="av">🤖</div><div class="bub"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  chatEl.insertBefore(d, spacer);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function removeTyping() { document.getElementById("typing")?.remove(); }
+
+// ── EmailSender API ──────────────────────────────────────────────────────────
+async function callEmailApi(c, args) {
+  const res = await fetch(`${c.ebase}/api/email/send-ai`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Api-Key": c.ekey
+    },
+    body: JSON.stringify({
+      recipients: args.recipients,
+      subject:    args.subject,
+      body:       args.body,
+      isHtml:     args.isHtml !== false
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  return data;
+}
+
+// ── Gemini API ───────────────────────────────────────────────────────────────
+async function callGemini(c, contents, withTools = true) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(c.gkey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: SYSTEM }] },
+      contents,
+      ...(withTools ? { tools: [TOOL] } : {}),
+      generation_config: { temperature: 0.4 }
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    const msg = e?.error?.message ?? res.statusText;
+    if (res.status === 400 && msg.includes("API_KEY"))
+      throw new Error("Invalid Gemini API key. Get one at https://aistudio.google.com/app/apikey");
+    if (res.status === 403)
+      throw new Error("Gemini API key has no permission. Check quota/billing in Google Cloud.");
+    throw new Error(`Gemini error (${res.status}): ${msg}`);
+  }
+  return res.json();
+}
+
+// ── Main flow ────────────────────────────────────────────────────────────────
+async function send() {
+  if (busy) return;
+  const c = cfg();
+  if (!c.gkey) { setStatus("⚠ Gemini key missing", "s-err"); addMsg("err", "Please enter your Gemini API key above."); return; }
+  if (!c.ekey) { setStatus("⚠ EmailSender key missing", "s-err"); return; }
+
+  const text = inpEl.value.trim();
+  if (!text) return;
+
+  busy = true; btnEl.disabled = true;
+  inpEl.value = ""; inpEl.style.height = "auto";
+
+  addMsg("user", text);
+  history.push({ role: "user", parts: [{ text }] });
+  addTyping();
+
+  try {
+    // Turn 1 — Gemini decides what to do
+    const r1 = await callGemini(c, [...history]);
+    removeTyping();
+
+    const parts = r1.candidates?.[0]?.content?.parts ?? [];
+    const fnPart = parts.find(p => p.functionCall);
+
+    if (fnPart) {
+      const args = fnPart.functionCall.args ?? {};
+      addToolBox(args);
+      history.push({ role: "model", parts });
+
+      // Call the EmailSender JSON API
+      let fnResult;
+      try {
+        const apiResp = await callEmailApi(c, args);
+        fnResult = { success: true, message: apiResp.message, recipientCount: apiResp.recipientCount };
+        addMsg("ok", `✅ Email sent to ${args.recipients?.join(", ")}`);
+      } catch (apiErr) {
+        fnResult = { success: false, error: String(apiErr.message) };
+        addMsg("err", `Failed to send: ${apiErr.message}`);
+      }
+
+      // Turn 2 — give Gemini the result so it can reply naturally
+      history.push({
+        role: "user",
+        parts: [{ functionResponse: { name: "send_email", response: fnResult } }]
+      });
+
+      const r2 = await callGemini(c, [...history], false);
+      const finalText = r2.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join("\n").trim();
+      if (finalText) {
+        addMsg("ai", finalText);
+        history.push({ role: "model", parts: [{ text: finalText }] });
+      }
+
+    } else {
+      // Normal text response (e.g. asking for missing details)
+      const aiText = parts.map(p => p.text).filter(Boolean).join("\n").trim()
+        || "I didn't get a response. Please try again.";
+      addMsg("ai", aiText);
+      history.push({ role: "model", parts: [{ text: aiText }] });
+    }
+
+  } catch (err) {
+    removeTyping();
+    addMsg("err", err.message);
+  } finally {
+    busy = false; btnEl.disabled = false; inpEl.focus();
+  }
+}
+
+function onKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  setTimeout(() => {
+    inpEl.style.height = "auto";
+    inpEl.style.height = Math.min(inpEl.scrollHeight, 130) + "px";
+  }, 0);
+}
+
+function chip(el) { inpEl.value = el.textContent; inpEl.focus(); }
+</script>
+</body>
+</html>

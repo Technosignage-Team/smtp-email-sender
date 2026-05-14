@@ -16,6 +16,9 @@ builder.Services.AddDbContext<EmailSenderDbContext>(opt =>
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// HttpClient for outbound calls (Gemini API)
+builder.Services.AddHttpClient();
+
 // Configure CORS for the frontend.
 // Allowed origins are loaded from appsettings.json ("Cors:AllowedOrigins").
 var allowedOrigins = builder.Configuration

@@ -1,0 +1,68 @@
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\publish\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\EmailSenderApi.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\EmailSenderApi.pdb
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Azure.Core.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Azure.Identity.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Bcl.AsyncInterfaces.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Data.SqlClient.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.EntityFrameworkCore.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.EntityFrameworkCore.Abstractions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.EntityFrameworkCore.Relational.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.EntityFrameworkCore.SqlServer.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.Caching.Memory.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.DependencyInjection.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.Logging.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.Logging.Abstractions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Extensions.Options.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Identity.Client.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Identity.Client.Extensions.Msal.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.Abstractions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.JsonWebTokens.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.Logging.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.Protocols.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.IdentityModel.Tokens.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.OpenApi.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.SqlServer.Server.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Microsoft.Win32.SystemEvents.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Swashbuckle.AspNetCore.Swagger.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Swashbuckle.AspNetCore.SwaggerGen.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\Swashbuckle.AspNetCore.SwaggerUI.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Configuration.ConfigurationManager.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Drawing.Common.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.IdentityModel.Tokens.Jwt.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Memory.Data.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Runtime.Caching.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Security.Cryptography.ProtectedData.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Security.Permissions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\System.Windows.Extensions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\unix\lib\net6.0\Microsoft.Data.SqlClient.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Drawing.Common.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
