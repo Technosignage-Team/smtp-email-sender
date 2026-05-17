@@ -25,6 +25,29 @@ namespace EmailApi.Models
 
         public int? DailyQuota { get; set; }
 
+        // ── Per-service sender ──────────────────────────────────────────────
+        /// <summary>Owner account. Null for legacy admin-created apps.</summary>
+        public int? UserId { get; set; }
+        public UserEntity? User { get; set; }
+
+        /// <summary>From email address for this service (overrides global SmtpConfig:FromEmail).</summary>
+        [MaxLength(256)]
+        public string? SenderEmail { get; set; }
+
+        /// <summary>Display name shown in the From field (e.g. "Heelovo Support").</summary>
+        [MaxLength(150)]
+        public string? SenderName { get; set; }
+
+        /// <summary>Optional SMTP username override (if different from global).</summary>
+        [MaxLength(256)]
+        public string? SmtpUsername { get; set; }
+
+        /// <summary>Optional SMTP password override. Stored as-is; encrypt at rest in production.</summary>
+        [MaxLength(512)]
+        public string? SmtpPassword { get; set; }
+
+        public ICollection<EmailTemplateEntity> Templates { get; set; } = new List<EmailTemplateEntity>();
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? LastUsedAt { get; set; }

@@ -10,6 +10,17 @@ namespace EmailApi.Services
         public string ContentType { get; set; } = "application/octet-stream";
     }
 
+    /// <summary>
+    /// Per-service SMTP overrides. Any null field falls back to the global SmtpConfig.
+    /// </summary>
+    public class ServiceSmtpConfig
+    {
+        public string? FromEmail { get; set; }
+        public string? FromName  { get; set; }
+        public string? Username  { get; set; }
+        public string? Password  { get; set; }
+    }
+
     public interface IEmailService
     {
         Task SendEmailAsync(string subject, string body);
@@ -19,7 +30,8 @@ namespace EmailApi.Services
             string body,
             IEnumerable<string>? recipients,
             IEnumerable<EmailAttachment>? attachments,
-            bool isHtml = true);
+            bool isHtml = true,
+            ServiceSmtpConfig? smtpOverride = null);
     }
 
     public class EmailService : IEmailService
@@ -42,27 +54,33 @@ namespace EmailApi.Services
             string body,
             IEnumerable<string>? recipients,
             IEnumerable<EmailAttachment>? attachments,
-            bool isHtml = true)
+            bool isHtml = true,
+            ServiceSmtpConfig? smtpOverride = null)
         {
-            var smtpHost = _config["SmtpConfig:Host"];
-            var smtpPort = int.Parse(_config["SmtpConfig:Port"] ?? "587");
-            var username = _config["SmtpConfig:Username"];
-            var password = _config["SmtpConfig:Password"];
-            var fromEmail = _config["SmtpConfig:FromEmail"];
-            var fallbackTo = _config["SmtpConfig:ToEmail"];
+            var smtpHost  = _config["SmtpConfig:Host"];
+            var smtpPort  = int.Parse(_config["SmtpConfig:Port"] ?? "587");
             var enableSsl = bool.Parse(_config["SmtpConfig:EnableSsl"] ?? "true");
+            var fallbackTo = _config["SmtpConfig:ToEmail"];
+
+            // Per-service override or global fallback
+            var username  = smtpOverride?.Username  ?? _config["SmtpConfig:Username"];
+            var password  = smtpOverride?.Password  ?? _config["SmtpConfig:Password"];
+            var fromEmail = smtpOverride?.FromEmail  ?? _config["SmtpConfig:FromEmail"];
+            var fromName  = smtpOverride?.FromName;
 
             using var client = new SmtpClient(smtpHost, smtpPort)
             {
                 Credentials = new NetworkCredential(username, password),
-                EnableSsl = enableSsl
+                EnableSsl   = enableSsl
             };
 
             using var mailMessage = new MailMessage
             {
-                From = new MailAddress(fromEmail!),
-                Subject = subject,
-                Body = body,
+                From       = string.IsNullOrWhiteSpace(fromName)
+                               ? new MailAddress(fromEmail!)
+                               : new MailAddress(fromEmail!, fromName),
+                Subject    = subject,
+                Body       = body,
                 IsBodyHtml = isHtml
             };
 

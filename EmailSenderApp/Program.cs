@@ -15,6 +15,7 @@ builder.Services.AddDbContext<EmailSenderDbContext>(opt =>
 
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 // HttpClient for outbound calls (Gemini API)
 builder.Services.AddHttpClient();

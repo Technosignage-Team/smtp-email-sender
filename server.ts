@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
@@ -8,6 +9,36 @@ dotenv.config();
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Proxy all .NET backend API routes — pipe raw body stream so no body is consumed.
+  function proxyTo(targetHost: string, targetPort: number) {
+    return (req: express.Request, res: express.Response) => {
+      const options: http.RequestOptions = {
+        hostname: targetHost,
+        port: targetPort,
+        path: req.originalUrl,
+        method: req.method,
+        headers: { ...req.headers, host: `${targetHost}:${targetPort}` },
+      };
+      const proxyReq = http.request(options, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+      proxyReq.on("error", () => res.status(502).json({ error: "Backend unreachable" }));
+      req.pipe(proxyReq);
+    };
+  }
+
+  const BACKEND_HOST = (process.env.VITE_API_TARGET || "http://localhost:5050")
+    .replace(/^https?:\/\//, "").split(":")[0];
+  const BACKEND_PORT = parseInt(
+    (process.env.VITE_API_TARGET || "http://localhost:5050").split(":")[2] ?? "5050"
+  );
+
+  app.use("/api/email",   proxyTo(BACKEND_HOST, BACKEND_PORT));
+  app.use("/api/apps",    proxyTo(BACKEND_HOST, BACKEND_PORT));
+  app.use("/api/ai",      proxyTo(BACKEND_HOST, BACKEND_PORT));
+  app.use("/api/account", proxyTo(BACKEND_HOST, BACKEND_PORT));
 
   app.use(express.json());
 

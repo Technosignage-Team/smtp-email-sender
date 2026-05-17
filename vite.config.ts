@@ -37,6 +37,11 @@ export default defineConfig(({mode}) => {
           changeOrigin: true,
           secure: false,
         },
+        '/api/account': {
+          target: env.VITE_API_TARGET || 'http://localhost:5050',
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   };

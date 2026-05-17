@@ -84,7 +84,14 @@ namespace EmailApi.Controllers
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                await _emailService.SendEmailAsync(form.Subject, form.Body, recipients, attachments, form.IsHtml);
+                var smtpOverride = app.SenderEmail != null ? new Services.ServiceSmtpConfig
+                {
+                    FromEmail = app.SenderEmail,
+                    FromName  = app.SenderName,
+                    Username  = app.SmtpUsername,
+                    Password  = app.SmtpPassword,
+                } : null;
+                await _emailService.SendEmailAsync(form.Subject, form.Body, recipients, attachments, form.IsHtml, smtpOverride);
                 sw.Stop();
 
                 await LogAsync(app, form, recipients, attachments.Count, attachmentBytes,
