@@ -15,10 +15,16 @@ namespace EmailApi.Services
     /// </summary>
     public class ServiceSmtpConfig
     {
-        public string? FromEmail { get; set; }
-        public string? FromName  { get; set; }
-        public string? Username  { get; set; }
-        public string? Password  { get; set; }
+        public string? FromEmail   { get; set; }
+        public string? FromName    { get; set; }
+        public string? Username    { get; set; }
+        public string? Password    { get; set; }
+        /// <summary>SMTP hostname override (e.g. smtp.gmail.com).</summary>
+        public string? Server      { get; set; }
+        /// <summary>SMTP port override (e.g. 587, 465).</summary>
+        public int?    Port        { get; set; }
+        /// <summary>"TLS", "SSL", or "None". Null = use global setting.</summary>
+        public string? Encryption  { get; set; }
     }
 
     public interface IEmailService
@@ -57,16 +63,27 @@ namespace EmailApi.Services
             bool isHtml = true,
             ServiceSmtpConfig? smtpOverride = null)
         {
-            var smtpHost  = _config["SmtpConfig:Host"];
-            var smtpPort  = int.Parse(_config["SmtpConfig:Port"] ?? "587");
-            var enableSsl = bool.Parse(_config["SmtpConfig:EnableSsl"] ?? "true");
             var fallbackTo = _config["SmtpConfig:ToEmail"];
 
-            // Per-service override or global fallback
-            var username  = smtpOverride?.Username  ?? _config["SmtpConfig:Username"];
-            var password  = smtpOverride?.Password  ?? _config["SmtpConfig:Password"];
+            // Per-service override or global fallback.
+            // Username falls back to the service's FromEmail (not the global account)
+            // so the SMTP server authenticates as the correct sender identity.
+            var smtpHost  = smtpOverride?.Server    ?? _config["SmtpConfig:Host"];
+            var smtpPort  = smtpOverride?.Port      ?? int.Parse(_config["SmtpConfig:Port"] ?? "587");
+            var enableSsl = smtpOverride?.Encryption != null
+                ? !string.Equals(smtpOverride.Encryption, "None", StringComparison.OrdinalIgnoreCase)
+                : bool.Parse(_config["SmtpConfig:EnableSsl"] ?? "true");
             var fromEmail = smtpOverride?.FromEmail  ?? _config["SmtpConfig:FromEmail"];
             var fromName  = smtpOverride?.FromName;
+            var password  = smtpOverride?.Password  ?? _config["SmtpConfig:Password"];
+            // Use the service's sender email as SMTP username only when the service also
+            // has its own password — otherwise keep the global SMTP username so credentials
+            // remain consistent and auth doesn't fail with a mismatched username/password.
+            var username  = smtpOverride?.Username
+                            ?? (!string.IsNullOrEmpty(smtpOverride?.Password)
+                                ? smtpOverride?.FromEmail
+                                : null)
+                            ?? _config["SmtpConfig:Username"];
 
             using var client = new SmtpClient(smtpHost, smtpPort)
             {
@@ -114,7 +131,7 @@ namespace EmailApi.Services
                 }
             }
 
-            await client.SendMailAsync(mailMessage);
+            await Task.Run(() => client.Send(mailMessage));
         }
     }
 }

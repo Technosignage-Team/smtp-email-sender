@@ -50,6 +50,18 @@ IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Apps')
     ALTER TABLE dbo.Apps ADD SmtpPassword NVARCHAR(512) NULL;
 GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Apps') AND name = 'SmtpServer')
+    ALTER TABLE dbo.Apps ADD SmtpServer NVARCHAR(256) NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Apps') AND name = 'SmtpPort')
+    ALTER TABLE dbo.Apps ADD SmtpPort INT NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Apps') AND name = 'SmtpEncryption')
+    ALTER TABLE dbo.Apps ADD SmtpEncryption NVARCHAR(20) NULL;
+GO
+
 -- Add FK after Users table exists
 IF NOT EXISTS (
     SELECT 1 FROM sys.foreign_keys

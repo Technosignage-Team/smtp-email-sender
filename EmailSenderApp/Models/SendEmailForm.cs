@@ -8,8 +8,16 @@ namespace EmailApi.Models
     /// </summary>
     public class SendEmailForm
     {
-        public string Subject { get; set; } = string.Empty;
-        public string Body { get; set; } = string.Empty;
+        /// <summary>
+        /// Optional. Use a saved template by ID (preferred) or name.
+        /// When supplied the template's Subject, Body and IsHtml are used unless
+        /// the caller also provides Subject/Body, which then override the template values.
+        /// </summary>
+        public int? TemplateId { get; set; }
+        public string? TemplateName { get; set; }
+
+        public string? Subject { get; set; }
+        public string? Body { get; set; }
 
         /// <summary>
         /// Comma- or semicolon-separated list of recipient email addresses.

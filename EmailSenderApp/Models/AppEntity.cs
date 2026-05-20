@@ -46,6 +46,17 @@ namespace EmailApi.Models
         [MaxLength(512)]
         public string? SmtpPassword { get; set; }
 
+        /// <summary>SMTP server hostname (e.g. smtp.gmail.com). Null = use global default.</summary>
+        [MaxLength(256)]
+        public string? SmtpServer { get; set; }
+
+        /// <summary>SMTP port (e.g. 587, 465, 25). Null = use global default.</summary>
+        public int? SmtpPort { get; set; }
+
+        /// <summary>Encryption method: "TLS" (STARTTLS), "SSL" (implicit), or "None".</summary>
+        [MaxLength(20)]
+        public string? SmtpEncryption { get; set; }
+
         public ICollection<EmailTemplateEntity> Templates { get; set; } = new List<EmailTemplateEntity>();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

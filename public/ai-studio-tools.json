@@ -1,0 +1,74 @@
+{
+  "info": {
+    "title": "Email Sender API — Google AI Studio Integration",
+    "description": "Give this file to Google AI Studio as a reference. Set the system_instructions below, add the function_declaration as a Tool, and use your service_api_key in every send_email call.",
+    "endpoint": "POST https://<your-domain>/api/email/send-ai",
+    "auth": "X-Api-Key header  OR  apiKey field in the JSON body"
+  },
+
+  "system_instructions": "You are an email assistant. When the user asks you to send an email, call the send_email function. Always confirm the recipient, subject and body before sending unless the user has already provided them. After a successful send, confirm to the user that the email was sent.",
+
+  "service_config": {
+    "_note": "Fill in your values. Never commit real keys to source control.",
+    "service_name": "<your-service-name>",
+    "service_api_key": "<your-service-api-key>",
+    "api_endpoint": "https://<your-domain>/api/email/send-ai"
+  },
+
+  "function_declaration": {
+    "name": "send_email",
+    "description": "Send an email to one or more recipients using the configured email service. The email is dispatched from the service configured sender address and SMTP server.",
+    "parameters": {
+      "type": "OBJECT",
+      "properties": {
+        "recipients": {
+          "type": "ARRAY",
+          "items": { "type": "STRING" },
+          "description": "List of recipient email addresses. Example: [\"alice@example.com\"]"
+        },
+        "subject": {
+          "type": "STRING",
+          "description": "Subject line of the email."
+        },
+        "body": {
+          "type": "STRING",
+          "description": "Body content of the email. Can be plain text or HTML."
+        },
+        "isHtml": {
+          "type": "BOOLEAN",
+          "description": "Set true if body contains HTML markup. Defaults to true."
+        }
+      },
+      "required": ["recipients", "subject", "body"]
+    }
+  },
+
+  "http_request": {
+    "method": "POST",
+    "url": "https://<your-domain>/api/email/send-ai",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Api-Key": "<your-service-api-key>"
+    },
+    "body": {
+      "recipients": ["user@example.com"],
+      "subject": "Hello from AI Studio",
+      "body": "<p>This email was sent by an AI assistant.</p>",
+      "isHtml": true
+    }
+  },
+
+  "example_response": {
+    "success": true,
+    "message": "Email sent successfully",
+    "recipientCount": 1,
+    "appName": "<your-service-name>"
+  },
+
+  "error_responses": {
+    "401": "Missing or invalid API key",
+    "403": "Service is deactivated",
+    "400": "Subject and Body are required  /  At least one recipient is required",
+    "500": "SMTP error — check service SMTP settings"
+  }
+}

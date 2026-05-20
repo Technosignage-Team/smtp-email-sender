@@ -1,13 +1,17 @@
 using EmailApi.Data;
 using EmailApi.Models;
 using EmailApi.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmailApi.Controllers
 {
+    // Email sending is a public API secured by API key — allow any origin so external
+    // apps (AI Studio, Claude, third-party integrations, localhost dev) can call it.
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("AllowAll")]
     public class EmailController : ControllerBase
     {
         private const string ApiKeyHeader = "X-Api-Key";
@@ -51,12 +55,36 @@ namespace EmailApi.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden, new { error = "This app has been deactivated." });
             }
 
-            // ---- Validate payload ----
-            if (string.IsNullOrWhiteSpace(form.Subject) || string.IsNullOrWhiteSpace(form.Body))
+            // ---- Resolve template (optional) ----
+            EmailTemplateEntity? tpl = null;
+            if (form.TemplateId.HasValue)
             {
-                await LogAsync(app, form, recipients: new(), attachments: 0, attachmentBytes: 0,
-                    status: "Rejected", error: "Subject and Body are required.", durationMs: 0);
-                return BadRequest(new { error = "Subject and Body are required." });
+                tpl = await _db.EmailTemplates.FirstOrDefaultAsync(
+                    t => t.Id == form.TemplateId.Value && t.AppId == app.Id);
+                if (tpl == null)
+                    return BadRequest(new { error = $"Template {form.TemplateId} not found for this service." });
+            }
+            else if (!string.IsNullOrWhiteSpace(form.TemplateName))
+            {
+                tpl = await _db.EmailTemplates.FirstOrDefaultAsync(
+                    t => t.Name == form.TemplateName && t.AppId == app.Id);
+                if (tpl == null)
+                    return BadRequest(new { error = $"Template '{form.TemplateName}' not found for this service." });
+            }
+
+            // Merge: template provides defaults; explicit form values override them.
+            var subject = (!string.IsNullOrWhiteSpace(form.Subject) ? form.Subject : null)
+                          ?? tpl?.Subject;
+            var body    = (!string.IsNullOrWhiteSpace(form.Body)    ? form.Body    : null)
+                          ?? tpl?.Body;
+            var isHtml  = tpl != null ? tpl.IsHtml : form.IsHtml;
+
+            // ---- Validate payload ----
+            if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(body))
+            {
+                await LogRawAsync(app, subject ?? string.Empty, body ?? string.Empty, new(), 0, 0,
+                    isHtml: form.IsHtml, status: "Rejected", error: "Subject and Body are required (or supply a templateId).", durationMs: 0);
+                return BadRequest(new { error = "Subject and Body are required (or supply a templateId)." });
             }
 
             var recipients = SplitRecipients(form.Recipients);
@@ -84,18 +112,23 @@ namespace EmailApi.Controllers
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var smtpOverride = app.SenderEmail != null ? new Services.ServiceSmtpConfig
+                // Always build per-service config; EmailService falls back to global
+                // SmtpConfig for any field that is null.
+                var smtpOverride = new Services.ServiceSmtpConfig
                 {
-                    FromEmail = app.SenderEmail,
-                    FromName  = app.SenderName,
-                    Username  = app.SmtpUsername,
-                    Password  = app.SmtpPassword,
-                } : null;
-                await _emailService.SendEmailAsync(form.Subject, form.Body, recipients, attachments, form.IsHtml, smtpOverride);
+                    FromEmail  = app.SenderEmail,
+                    FromName   = app.SenderName,
+                    Username   = app.SmtpUsername,
+                    Password   = app.SmtpPassword,
+                    Server     = app.SmtpServer,
+                    Port       = app.SmtpPort,
+                    Encryption = app.SmtpEncryption,
+                };
+                await _emailService.SendEmailAsync(subject!, body!, recipients, attachments, isHtml, smtpOverride);
                 sw.Stop();
 
-                await LogAsync(app, form, recipients, attachments.Count, attachmentBytes,
-                    status: "Sent", error: null, durationMs: (int)sw.ElapsedMilliseconds);
+                await LogRawAsync(app, subject!, body!, recipients, attachments.Count, attachmentBytes,
+                    isHtml: isHtml, status: "Sent", error: null, durationMs: (int)sw.ElapsedMilliseconds);
 
                 return Ok(new
                 {
@@ -103,13 +136,14 @@ namespace EmailApi.Controllers
                     recipientCount = recipients.Count == 0 ? 1 : recipients.Count,
                     attachmentCount = attachments.Count,
                     appName = app.AppName,
+                    templateUsed = tpl?.Name,
                 });
             }
             catch (Exception ex)
             {
                 sw.Stop();
-                await LogAsync(app, form, recipients, attachments.Count, attachmentBytes,
-                    status: "Failed", error: ex.Message, durationMs: (int)sw.ElapsedMilliseconds);
+                await LogRawAsync(app, subject ?? string.Empty, body ?? string.Empty, recipients, attachments.Count, attachmentBytes,
+                    isHtml: isHtml, status: "Failed", error: ex.Message, durationMs: (int)sw.ElapsedMilliseconds);
                 return StatusCode(500, new { error = ex.Message });
             }
         }
@@ -130,46 +164,83 @@ namespace EmailApi.Controllers
                 : request.ApiKey?.Trim();
 
             if (string.IsNullOrWhiteSpace(apiKey))
-                return Unauthorized(new { success = false, error = "Missing API key. Send it in the X-Api-Key header or apiKey JSON field." });
+                return Unauthorized(new { success = false, error = "Missing API key. Send it in the X-Api-Key header or apiKey JSON field.", fieldHints = request.FieldHints });
 
             var app = await _db.Apps.FirstOrDefaultAsync(a => a.AppKey == apiKey);
             if (app == null)
-                return Unauthorized(new { success = false, error = "Invalid API key." });
+                return Unauthorized(new { success = false, error = "Invalid API key.", fieldHints = request.FieldHints });
             if (!app.IsActive)
-                return StatusCode(StatusCodes.Status403Forbidden, new { success = false, error = "This app has been deactivated." });
+                return StatusCode(StatusCodes.Status403Forbidden, new { success = false, error = "This app has been deactivated.", fieldHints = request.FieldHints });
 
-            // ---- Validate payload ----
-            if (string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
+            // ---- Resolve template (flexible: int, "5", or "Template Name") ----
+            EmailTemplateEntity? tpl = null;
+            var templateRef = request.TemplateRef ?? request.TemplateName;
+            if (!string.IsNullOrWhiteSpace(templateRef))
             {
-                await LogRawAsync(app, request.Subject, request.Body, request.Recipients,
-                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
-                    status: "Rejected", error: "Subject and Body are required.", durationMs: 0);
-                return BadRequest(new { success = false, error = "Subject and Body are required." });
+                if (int.TryParse(templateRef.Trim(), out var tid))
+                    tpl = await _db.EmailTemplates.FirstOrDefaultAsync(t => t.Id == tid && t.AppId == app.Id);
+                else
+                    tpl = await _db.EmailTemplates.FirstOrDefaultAsync(t => t.Name == templateRef.Trim() && t.AppId == app.Id);
+
+                if (tpl == null)
+                    return BadRequest(new { success = false, error = $"Template '{templateRef}' not found for this service.", fieldHints = request.FieldHints });
             }
 
-            if (request.Recipients == null || request.Recipients.Count == 0)
-            {
-                await LogRawAsync(app, request.Subject, request.Body, new List<string>(),
-                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
-                    status: "Rejected", error: "At least one recipient is required.", durationMs: 0);
-                return BadRequest(new { success = false, error = "At least one recipient is required." });
-            }
+            // Merge: template provides defaults; explicit request values override them.
+            var subject = (!string.IsNullOrWhiteSpace(request.Subject) ? request.Subject : null)
+                          ?? tpl?.Subject;
+            var body    = (!string.IsNullOrWhiteSpace(request.Body)    ? request.Body    : null)
+                          ?? tpl?.Body;
+            var isHtml  = tpl != null ? tpl.IsHtml : request.IsHtml;
 
-            var recipients = request.Recipients
+            // ---- Normalize recipients from all accepted aliases ----
+            // Priority: recipients[] > recipient > to > email > recipientEmail
+            var recipients = (request.Recipients ?? new List<string>())
                 .Where(r => !string.IsNullOrWhiteSpace(r))
                 .Select(r => r.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            if (recipients.Count == 0 && !string.IsNullOrWhiteSpace(request.Recipient))
+                recipients.AddRange(SplitRecipients(request.Recipient));
+            if (recipients.Count == 0 && !string.IsNullOrWhiteSpace(request.To))
+                recipients.AddRange(SplitRecipients(request.To));
+            if (recipients.Count == 0 && !string.IsNullOrWhiteSpace(request.Email))
+                recipients.AddRange(SplitRecipients(request.Email));
+            if (recipients.Count == 0 && !string.IsNullOrWhiteSpace(request.RecipientEmail))
+                recipients.AddRange(SplitRecipients(request.RecipientEmail));
+
+            recipients = recipients.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            // ---- Validate payload ----
+            if (recipients.Count == 0)
+            {
+                await LogRawAsync(app, subject ?? string.Empty, body ?? string.Empty, new List<string>(),
+                    attachments: 0, attachmentBytes: 0, isHtml: isHtml,
+                    status: "Rejected", error: "At least one recipient is required (use: recipients, recipient, to, or email).", durationMs: 0);
+                return BadRequest(new { success = false, error = "At least one recipient is required (use: recipients, recipient, to, or email).", fieldHints = request.FieldHints });
+            }
 
             // ---- Send + log ----
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                await _emailService.SendEmailAsync(request.Subject, request.Body, recipients, new List<EmailAttachment>(), request.IsHtml);
+                // Always build per-service config; EmailService falls back to global
+                // SmtpConfig for any field that is null.
+                var smtpOverride = new Services.ServiceSmtpConfig
+                {
+                    FromEmail  = app.SenderEmail,
+                    FromName   = app.SenderName,
+                    Username   = app.SmtpUsername,
+                    Password   = app.SmtpPassword,
+                    Server     = app.SmtpServer,
+                    Port       = app.SmtpPort,
+                    Encryption = app.SmtpEncryption,
+                };
+                await _emailService.SendEmailAsync(subject ?? string.Empty, body ?? string.Empty, recipients, new List<EmailAttachment>(), isHtml, smtpOverride);
                 sw.Stop();
 
-                await LogRawAsync(app, request.Subject, request.Body, recipients,
-                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                await LogRawAsync(app, subject ?? string.Empty, body ?? string.Empty, recipients,
+                    attachments: 0, attachmentBytes: 0, isHtml: isHtml,
                     status: "Sent", error: null, durationMs: (int)sw.ElapsedMilliseconds);
 
                 return Ok(new
@@ -178,15 +249,17 @@ namespace EmailApi.Controllers
                     message = "Email sent successfully",
                     recipientCount = recipients.Count,
                     appName = app.AppName,
+                    templateUsed = tpl?.Name,
+                    fieldHints = request.FieldHints,
                 });
             }
             catch (Exception ex)
             {
                 sw.Stop();
-                await LogRawAsync(app, request.Subject, request.Body, recipients,
-                    attachments: 0, attachmentBytes: 0, isHtml: request.IsHtml,
+                await LogRawAsync(app, subject ?? string.Empty, body ?? string.Empty, recipients,
+                    attachments: 0, attachmentBytes: 0, isHtml: isHtml,
                     status: "Failed", error: ex.Message, durationMs: (int)sw.ElapsedMilliseconds);
-                return StatusCode(500, new { success = false, error = ex.Message });
+                return StatusCode(500, new { success = false, error = ex.Message, fieldHints = request.FieldHints });
             }
         }
 
@@ -241,15 +314,6 @@ namespace EmailApi.Controllers
             if (req.Query.TryGetValue("apiKey", out var q) && !string.IsNullOrWhiteSpace(q))
                 return q.ToString().Trim();
             return null;
-        }
-
-        private async Task LogAsync(
-            AppEntity app, SendEmailForm form, List<string> recipients,
-            int attachments, long attachmentBytes, string status, string? error, int durationMs)
-        {
-            var finalRecipients = recipients.Count > 0 ? recipients : new List<string>();
-            await LogRawAsync(app, form.Subject, form.Body, finalRecipients,
-                attachments, attachmentBytes, form.IsHtml, status, error, durationMs);
         }
 
         private async Task LogRawAsync(

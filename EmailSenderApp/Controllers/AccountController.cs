@@ -120,6 +120,9 @@ namespace EmailApi.Controllers
                 SenderName   = req.SenderName?.Trim(),
                 SmtpUsername = req.SmtpUsername?.Trim(),
                 SmtpPassword = req.SmtpPassword,
+                SmtpServer   = req.SmtpServer?.Trim(),
+                SmtpPort     = req.SmtpPort,
+                SmtpEncryption = req.SmtpEncryption?.Trim(),
                 Description  = req.Description?.Trim(),
                 AppKey       = GenerateApiKey(),
                 IsActive     = true,
@@ -154,6 +157,9 @@ namespace EmailApi.Controllers
             if (req.SenderName  != null) app.SenderName   = req.SenderName.Trim();
             if (req.SmtpUsername!= null) app.SmtpUsername = req.SmtpUsername.Trim();
             if (req.SmtpPassword!= null) app.SmtpPassword = req.SmtpPassword;
+            if (req.SmtpServer  != null) app.SmtpServer   = req.SmtpServer.Trim();
+            if (req.SmtpPort.HasValue)   app.SmtpPort     = req.SmtpPort.Value;
+            if (req.SmtpEncryption != null) app.SmtpEncryption = req.SmtpEncryption.Trim();
             if (req.IsActive.HasValue)   app.IsActive     = req.IsActive.Value;
             app.UpdatedAt = DateTime.UtcNow;
 
@@ -299,12 +305,15 @@ namespace EmailApi.Controllers
         private static object ToServiceDto(AppEntity a) => new
         {
             a.Id,
-            name         = a.AppName,
-            apiKey       = a.AppKey,
-            senderEmail  = a.SenderEmail,
-            senderName   = a.SenderName,
-            smtpUsername = a.SmtpUsername,
+            name            = a.AppName,
+            apiKey          = a.AppKey,
+            senderEmail     = a.SenderEmail,
+            senderName      = a.SenderName,
+            smtpUsername    = a.SmtpUsername,
             hasSmtpPassword = !string.IsNullOrEmpty(a.SmtpPassword),
+            smtpServer      = a.SmtpServer,
+            smtpPort        = a.SmtpPort,
+            smtpEncryption  = a.SmtpEncryption,
             a.IsActive,
             a.Description,
             a.CreatedAt,
@@ -343,22 +352,28 @@ namespace EmailApi.Controllers
 
         public class CreateServiceRequest
         {
-            public string  Name         { get; set; } = string.Empty;
-            public string  SenderEmail  { get; set; } = string.Empty;
-            public string? SenderName   { get; set; }
-            public string? SmtpUsername { get; set; }
-            public string? SmtpPassword { get; set; }
-            public string? Description  { get; set; }
+            public string  Name           { get; set; } = string.Empty;
+            public string  SenderEmail    { get; set; } = string.Empty;
+            public string? SenderName     { get; set; }
+            public string? SmtpUsername   { get; set; }
+            public string? SmtpPassword   { get; set; }
+            public string? SmtpServer     { get; set; }
+            public int?    SmtpPort       { get; set; }
+            public string? SmtpEncryption { get; set; }
+            public string? Description    { get; set; }
         }
 
         public class UpdateServiceRequest
         {
-            public string? Name         { get; set; }
-            public string? SenderEmail  { get; set; }
-            public string? SenderName   { get; set; }
-            public string? SmtpUsername { get; set; }
-            public string? SmtpPassword { get; set; }
-            public bool?   IsActive     { get; set; }
+            public string? Name           { get; set; }
+            public string? SenderEmail    { get; set; }
+            public string? SenderName     { get; set; }
+            public string? SmtpUsername   { get; set; }
+            public string? SmtpPassword   { get; set; }
+            public string? SmtpServer     { get; set; }
+            public int?    SmtpPort       { get; set; }
+            public string? SmtpEncryption { get; set; }
+            public bool?   IsActive       { get; set; }
         }
 
         public class TemplateRequest

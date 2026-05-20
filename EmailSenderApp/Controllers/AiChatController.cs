@@ -163,12 +163,15 @@ namespace EmailApi.Controllers
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    var smtpOverride = app.SenderEmail != null ? new Services.ServiceSmtpConfig
+                    var smtpOverride = (app.SenderEmail != null || app.SmtpServer != null) ? new Services.ServiceSmtpConfig
                     {
-                        FromEmail = app.SenderEmail,
-                        FromName  = app.SenderName,
-                        Username  = app.SmtpUsername,
-                        Password  = app.SmtpPassword,
+                        FromEmail  = app.SenderEmail,
+                        FromName   = app.SenderName,
+                        Username   = app.SmtpUsername,
+                        Password   = app.SmtpPassword,
+                        Server     = app.SmtpServer,
+                        Port       = app.SmtpPort,
+                        Encryption = app.SmtpEncryption,
                     } : null;
                     await _emailService.SendEmailAsync(subject, body, recipients, Array.Empty<EmailAttachment>(), isHtml, smtpOverride);
                     emailOk = true;

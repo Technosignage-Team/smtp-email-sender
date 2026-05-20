@@ -2,6 +2,13 @@ using EmailApi.Data;
 using EmailApi.Services;
 using Microsoft.EntityFrameworkCore;
 
+// Prevent unobserved task exceptions from crashing the process.
+TaskScheduler.UnobservedTaskException += (_, e) =>
+{
+    Console.Error.WriteLine($"[UnobservedTaskException] {e.Exception}");
+    e.SetObserved();
+};
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -60,7 +67,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+// Use the configured policy (lists exact origins); falls back to AllowAny only when
+// no origins are configured (local dev without appsettings overrides).
+app.UseCors(allowedOrigins.Length > 0 ? "FrontendPolicy" : "AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
