@@ -66,3 +66,4 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish Emai
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmailSender\EmailSenderApi.xml

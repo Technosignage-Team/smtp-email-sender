@@ -1,0 +1,250 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EmailSenderApi</name>
+    </assembly>
+    <members>
+        <member name="M:EmailApi.Controllers.AccountController.Register(EmailApi.Controllers.AccountController.RegisterRequest)">
+            <summary>POST /api/account/register</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.Login(EmailApi.Controllers.AccountController.LoginRequest)">
+            <summary>POST /api/account/login</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.Me">
+            <summary>GET /api/account/me  [auth required]</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.ListServices">
+            <summary>GET /api/account/services</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.CreateService(EmailApi.Controllers.AccountController.CreateServiceRequest)">
+            <summary>POST /api/account/services</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.UpdateService(System.Int32,EmailApi.Controllers.AccountController.UpdateServiceRequest)">
+            <summary>PATCH /api/account/services/{id}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.DeleteService(System.Int32)">
+            <summary>DELETE /api/account/services/{id}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.RegenerateKey(System.Int32)">
+            <summary>POST /api/account/services/{id}/regenerate-key</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.ListTemplates(System.Int32)">
+            <summary>GET /api/account/services/{id}/templates</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.CreateTemplate(System.Int32,EmailApi.Controllers.AccountController.TemplateRequest)">
+            <summary>POST /api/account/services/{id}/templates</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.UpdateTemplate(System.Int32,System.Int32,EmailApi.Controllers.AccountController.TemplateRequest)">
+            <summary>PATCH /api/account/services/{id}/templates/{tid}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.DeleteTemplate(System.Int32,System.Int32)">
+            <summary>DELETE /api/account/services/{id}/templates/{tid}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AiChatController.Chat(EmailApi.Models.AiChatRequest)">
+             <summary>
+             AI chat endpoint. Accepts a user message + conversation history, asks Gemini,
+             and — if Gemini wants to send an email — executes it via the local email service.
+            
+             Auth:
+               - Email API key: X-Api-Key header OR emailApiKey JSON field.
+               - Gemini API key: appsettings.json "Gemini:ApiKey" OR X-Gemini-Key header OR geminiApiKey JSON field.
+             </summary>
+        </member>
+        <member name="M:EmailApi.Controllers.EmailController.SendEmail(EmailApi.Models.SendEmailForm)">
+             <summary>
+             Unified send endpoint. Accepts multipart/form-data so the caller can include
+             file attachments. <c>Recipients</c> may be a comma- or semicolon-separated list.
+             If omitted, the configured fallback ToEmail is used.
+            
+             Authentication: send the registered app's API key in the <c>X-Api-Key</c> header
+             (or as an <c>ApiKey</c> form field).
+             </summary>
+        </member>
+        <member name="M:EmailApi.Controllers.EmailController.SendAiEmail(EmailApi.Models.SendAiEmailRequest)">
+            <summary>
+            Send an email using a simple JSON payload — designed for AI tools, webhooks, and external integrations.
+            Accepts application/json so it works out-of-the-box with Gemini function calling,
+            OpenAI Actions, Claude tools, fetch(), and axios.
+            <br/><br/>
+            Authentication: send your registered app's API key via the <c>X-Api-Key</c> header.
+            Alternatively, include an <c>apiKey</c> field in the JSON body.
+            <br/><br/>
+            Recipients can be specified via <c>recipients</c> (array), <c>recipient</c>, <c>to</c>,
+            <c>email</c>, or <c>recipientEmail</c> — all are accepted.
+            <br/><br/>
+            Templates can be referenced by numeric ID, numeric string, or template name.
+            Template values are used as defaults; any explicit field overrides the template.
+            </summary>
+            <param name="request">JSON body with email content, recipients, and optional template reference.</param>
+            <response code="200">Email sent successfully.</response>
+            <response code="400">Validation error — missing recipient, subject, body, or invalid template.</response>
+            <response code="401">Missing or invalid API key.</response>
+            <response code="403">App has been deactivated.</response>
+            <response code="500">Email sending failed due to an SMTP or server error.</response>
+        </member>
+        <member name="M:EmailApi.Controllers.EmailController.SendBulkEmail(EmailApi.Models.BulkEmailRequest)">
+            <summary>
+            Legacy JSON endpoint kept for backward compatibility. Also requires X-Api-Key.
+            </summary>
+        </member>
+        <member name="T:EmailApi.Models.AiChatRequest">
+            <summary>
+            Request body for POST /api/ai/chat — the AI-friendly chat endpoint.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.AiChatRequest.Message">
+            <summary>The latest user message to process.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AiChatRequest.History">
+            <summary>Previous conversation turns (oldest first).</summary>
+        </member>
+        <member name="P:EmailApi.Models.AiChatRequest.GeminiApiKey">
+            <summary>Optional Gemini API key — used when the server has none configured.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AiChatRequest.EmailApiKey">
+            <summary>Optional email API key — alternative to the X-Api-Key header.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AiChatHistoryItem.Role">
+            <summary>"user" or "assistant"</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.UserId">
+            <summary>Owner account. Null for legacy admin-created apps.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SenderEmail">
+            <summary>From email address for this service (overrides global SmtpConfig:FromEmail).</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SenderName">
+            <summary>Display name shown in the From field (e.g. "Heelovo Support").</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SmtpUsername">
+            <summary>Optional SMTP username override (if different from global).</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SmtpPassword">
+            <summary>Optional SMTP password override. Stored as-is; encrypt at rest in production.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SmtpServer">
+            <summary>SMTP server hostname (e.g. smtp.gmail.com). Null = use global default.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SmtpPort">
+            <summary>SMTP port (e.g. 587, 465, 25). Null = use global default.</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.SmtpEncryption">
+            <summary>Encryption method: "TLS" (STARTTLS), "SSL" (implicit), or "None".</summary>
+        </member>
+        <member name="T:EmailApi.Models.SendAiEmailRequest">
+            <summary>
+            JSON body accepted by POST /api/email/send-ai.
+            Designed to be lenient so any external app can call the endpoint without knowing
+            our exact schema — common field-name variants are all accepted.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.ApiKey">
+            <summary>Optional API key alternative to the X-Api-Key header.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.ApiKeySnake">
+            <summary>snake_case alias for apiKey — tracked so the response can hint the canonical name.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.TemplateRef">
+            <summary>
+            Template reference: numeric ID (5), numeric string ("5"), or template name ("Welcome Email").
+            If numeric → looks up by ID; otherwise looks up by name.
+            When a template is found its Subject/Body/IsHtml are used unless the caller also
+            supplies those fields, which then override the template values.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.TemplateIdSnake">
+            <summary>snake_case alias for templateId — tracked so the response can hint the canonical name.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.TemplateName">
+            <summary>Explicit template name lookup (alternative to templateId).</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.TemplateNameSnake">
+            <summary>snake_case alias for templateName — tracked so the response can hint the canonical name.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.Recipients">
+            <summary>Array of recipient addresses. Also accepts a single address here.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.Recipient">
+            <summary>"recipient" — single-address alias accepted from external forms.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.To">
+            <summary>"to" — alias accepted from external forms.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.Email">
+            <summary>"email" / "recipientEmail" — aliases accepted from external forms.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.RecipientEmailSnake">
+            <summary>snake_case alias for recipientEmail — tracked so the response can hint the canonical name.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.FieldHints">
+            <summary>
+            Returns a dictionary of { usedAlias → canonicalName } for every non-standard
+            field the caller sent. Null when no aliases were used.
+            Included in every response so external apps know the preferred field names.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.Subject">
+            <summary>Email subject line. If a template is used, this overrides the template's subject.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.Body">
+            <summary>Email body content. Can be plain text or HTML depending on <see cref="P:EmailApi.Models.SendAiEmailRequest.IsHtml"/>. If a template is used, this overrides the template's body.</summary>
+        </member>
+        <member name="P:EmailApi.Models.SendAiEmailRequest.IsHtml">
+            <summary>Whether <see cref="P:EmailApi.Models.SendAiEmailRequest.Body"/> contains HTML. Defaults to true.</summary>
+        </member>
+        <member name="T:EmailApi.Models.TemplateRefConverter">
+            <summary>
+            Allows templateId to be sent as a JSON number (5), a numeric string ("5"),
+            or a template name ("Welcome Email") — all stored as a string internally.
+            </summary>
+        </member>
+        <member name="T:EmailApi.Models.SendEmailForm">
+            <summary>
+            Multipart/form-data payload accepted by POST /api/email/send.
+            Supports a single recipient, multiple recipients, and file attachments.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendEmailForm.TemplateId">
+            <summary>
+            Optional. Use a saved template by ID (preferred) or name.
+            When supplied the template's Subject, Body and IsHtml are used unless
+            the caller also provides Subject/Body, which then override the template values.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendEmailForm.Recipients">
+            <summary>
+            Comma- or semicolon-separated list of recipient email addresses.
+            Leave empty to fall back to the configured SmtpConfig:ToEmail.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendEmailForm.IsHtml">
+            <summary>
+            Whether the body should be sent as HTML. Defaults to true.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendEmailForm.Attachments">
+            <summary>
+            Optional file attachments uploaded via multipart/form-data.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Models.SendEmailForm.ApiKey">
+            <summary>
+            Optional API key (alternative to the X-Api-Key header).
+            </summary>
+        </member>
+        <member name="T:EmailApi.Services.ServiceSmtpConfig">
+            <summary>
+            Per-service SMTP overrides. Any null field falls back to the global SmtpConfig.
+            </summary>
+        </member>
+        <member name="P:EmailApi.Services.ServiceSmtpConfig.Server">
+            <summary>SMTP hostname override (e.g. smtp.gmail.com).</summary>
+        </member>
+        <member name="P:EmailApi.Services.ServiceSmtpConfig.Port">
+            <summary>SMTP port override (e.g. 587, 465).</summary>
+        </member>
+        <member name="P:EmailApi.Services.ServiceSmtpConfig.Encryption">
+            <summary>"TLS", "SSL", or "None". Null = use global setting.</summary>
+        </member>
+    </members>
+</doc>

@@ -149,13 +149,33 @@ namespace EmailApi.Controllers
         }
 
         /// <summary>
-        /// AI-friendly JSON endpoint. Accepts application/json so it works out-of-the-box
-        /// with Gemini function calling, OpenAI Actions, Claude tools, fetch(), and axios.
-        /// Supports the X-Api-Key header OR an "apiKey" field inside the JSON body.
+        /// Send an email using a simple JSON payload — designed for AI tools, webhooks, and external integrations.
+        /// Accepts application/json so it works out-of-the-box with Gemini function calling,
+        /// OpenAI Actions, Claude tools, fetch(), and axios.
+        /// <br/><br/>
+        /// Authentication: send your registered app's API key via the <c>X-Api-Key</c> header.
+        /// Alternatively, include an <c>apiKey</c> field in the JSON body.
+        /// <br/><br/>
+        /// Recipients can be specified via <c>recipients</c> (array), <c>recipient</c>, <c>to</c>,
+        /// <c>email</c>, or <c>recipientEmail</c> — all are accepted.
+        /// <br/><br/>
+        /// Templates can be referenced by numeric ID, numeric string, or template name.
+        /// Template values are used as defaults; any explicit field overrides the template.
         /// </summary>
+        /// <param name="request">JSON body with email content, recipients, and optional template reference.</param>
+        /// <response code="200">Email sent successfully.</response>
+        /// <response code="400">Validation error — missing recipient, subject, body, or invalid template.</response>
+        /// <response code="401">Missing or invalid API key.</response>
+        /// <response code="403">App has been deactivated.</response>
+        /// <response code="500">Email sending failed due to an SMTP or server error.</response>
         [HttpPost("send-ai")]
         [Consumes("application/json")]
         [Produces("application/json")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendAiEmail([FromBody] SendAiEmailRequest request)
         {
             // ---- API key resolution (header first, body fallback) ----

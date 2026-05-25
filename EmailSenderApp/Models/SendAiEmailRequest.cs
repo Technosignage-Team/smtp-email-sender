@@ -71,8 +71,10 @@ namespace EmailApi.Models
             _usedAliases.Count > 0 ? _usedAliases : null;
 
         // ── Content ─────────────────────────────────────────────────────────
+        /// <summary>Email subject line. If a template is used, this overrides the template's subject.</summary>
         public string? Subject { get; set; }
 
+        /// <summary>Email body content. Can be plain text or HTML depending on <see cref="IsHtml"/>. If a template is used, this overrides the template's body.</summary>
         public string? Body { get; set; }
 
         /// <summary>Whether <see cref="Body"/> contains HTML. Defaults to true.</summary>

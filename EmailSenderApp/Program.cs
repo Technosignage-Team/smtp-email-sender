@@ -1,6 +1,8 @@
+using System.Reflection;
 using EmailApi.Data;
 using EmailApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 // Prevent unobserved task exceptions from crashing the process.
 TaskScheduler.UnobservedTaskException += (_, e) =>
@@ -14,7 +16,43 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Email Sender API",
+        Version = "v1",
+        Description = "Public API for sending emails. Authenticate via the X-Api-Key header with your registered app key."
+    });
+
+    // Security scheme for X-Api-Key header
+    c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Name = "X-Api-Key",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Description = "Enter your app's API key to authenticate.",
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath);
+});
 
 // Database
 builder.Services.AddDbContext<EmailSenderDbContext>(opt =>
@@ -61,11 +99,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Email Sender API v1");
+    c.RoutePrefix = "swagger";
+});
 
 // Use the configured policy (lists exact origins); falls back to AllowAny only when
 // no origins are configured (local dev without appsettings overrides).

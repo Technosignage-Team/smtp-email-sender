@@ -90,3 +90,5 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish Emao
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.deps.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\EmailSenderApi.xml
+E:\Email sender\smtp-email-sender\EmailSenderApp\obj\Release\net8.0\EmailSenderApi.xml
