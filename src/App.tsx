@@ -4,155 +4,153 @@
  */
 
 import { useState } from 'react';
-import { EmailSender, type EmailTemplate } from './email-sender';
-import { AppsManager } from './apps-manager';
-import { AiChat } from './ai-chat';
+import { EmailSender } from './email-sender';
 import { AccountDashboard } from './account';
 
-const TEMPLATES: EmailTemplate[] = [
-  {
-    id: 'welcome',
-    name: 'Welcome email',
-    description: 'Greet a new user',
-    subject: 'Welcome to {{company}}, {{name}}!',
-    body:
-      '<p>Hi {{name}},</p>' +
-      '<p>Thanks for joining <strong>{{company}}</strong>. We are thrilled to have you.</p>' +
-      '<p>— The {{company}} team</p>',
-    isHtml: true,
-  },
-  {
-    id: 'invoice',
-    name: 'Invoice reminder',
-    description: 'Polite payment nudge',
-    subject: 'Invoice {{invoice}} reminder',
-    body:
-      '<p>Hello {{name}},</p>' +
-      '<p>This is a friendly reminder that invoice <strong>{{invoice}}</strong> ' +
-      'for <strong>{{amount}}</strong> is due on {{dueDate}}.</p>',
-    isHtml: true,
-  },
-  {
-    id: 'plain',
-    name: 'Plain text note',
-    subject: 'Quick note',
-    body: 'Hi {{name}},\n\nJust a quick note.\n\nThanks!',
-    isHtml: false,
-  },
-];
+type View = 'send' | 'account';
 
-type View = 'send' | 'apps' | 'ai' | 'account';
-
-// Production: set VITE_API_BASE_URL=https://EmailSender-api.technosignage.com at build time.
-// Development: leave empty to use the Vite dev proxy.
 const API_BASE: string = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [view, setView] = useState<View>('send');
+  const [theme, setTheme]   = useState<'light' | 'dark'>('light');
+  const [view, setView]     = useState<View>('account');
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('es_api_key') || '');
 
-  const wrap: React.CSSProperties = {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 16,
-    padding: 24,
-    background: theme === 'dark' ? '#09090b' : '#f4f4f5',
-    transition: 'background 200ms ease',
-  };
+  const isDark = theme === 'dark';
 
-  const navWrap: React.CSSProperties = {
-    display: 'flex',
-    gap: 8,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    width: '100%',
-    maxWidth: 1100,
+  const vars = {
+    bg:      isDark ? '#09090b' : '#f0f0f2',
+    navBg:   isDark ? '#18181b' : '#ffffff',
+    border:  isDark ? '#27272a' : '#e4e4e7',
+    text:    isDark ? '#fafafa' : '#18181b',
+    muted:   isDark ? '#71717a' : '#6b7280',
+    accent:  '#6366f1',
   };
 
   const navBtn = (active: boolean): React.CSSProperties => ({
-    padding: '8px 16px',
-    border: '1px solid',
-    borderColor: active
-      ? '#6366f1'
-      : theme === 'dark' ? '#27272a' : '#e4e4e7',
-    background: active ? '#6366f1' : 'transparent',
-    color: active ? '#fff' : theme === 'dark' ? '#fafafa' : '#27272a',
-    borderRadius: 10,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '6px 14px',
+    border: 'none',
+    background: active ? vars.accent : 'transparent',
+    color: active ? '#ffffff' : vars.muted,
+    borderRadius: 8,
     cursor: 'pointer',
     font: 'inherit',
     fontSize: 13,
     fontWeight: 600,
+    transition: 'background 150ms, color 150ms',
   });
 
-  const small: React.CSSProperties = {
-    background: 'transparent',
-    border: '1px solid',
-    borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
-    color: theme === 'dark' ? '#fafafa' : '#27272a',
-    padding: '6px 12px',
-    borderRadius: 8,
-    cursor: 'pointer',
-    font: 'inherit',
-    fontSize: 12,
-  };
-
-  const keyInput: React.CSSProperties = {
-    flex: 1,
-    minWidth: 240,
-    maxWidth: 380,
-    padding: '7px 11px',
-    border: '1px solid',
-    borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
-    background: theme === 'dark' ? '#18181b' : '#ffffff',
-    color: theme === 'dark' ? '#fafafa' : '#27272a',
-    borderRadius: 8,
-    font: 'inherit',
-    fontSize: 12,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-  };
-
   return (
-    <div style={wrap}>
-      <div style={navWrap}>
-        <button style={navBtn(view === 'send')} onClick={() => setView('send')}>Send Email</button>
-        <button style={navBtn(view === 'apps')} onClick={() => setView('apps')}>App Management</button>
-        <button style={navBtn(view === 'ai')}      onClick={() => setView('ai')}>AI Email Chat</button>
-        <button style={navBtn(view === 'account')} onClick={() => setView('account')}>Account</button>
-        <span style={{ flex: 1 }} />
-        {view === 'send' && (
-          <input
-            style={keyInput}
-            type="password"
-            placeholder="Paste API key (X-Api-Key)"
-            value={apiKey}
-            onChange={(e) => {
-              setApiKey(e.target.value);
-              localStorage.setItem('es_api_key', e.target.value);
-            }}
-          />
-        )}
-        <button style={small} onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}>
-          {theme === 'light' ? 'Dark' : 'Light'} theme
-        </button>
-      </div>
+    <div style={{ minHeight: '100vh', background: vars.bg, color: vars.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
 
-      {view === 'send' && (
-        <EmailSender
-          apiBaseUrl={API_BASE}
-          apiKey={apiKey}
-          templates={TEMPLATES}
-          theme={theme}
-          subtitle="Backed by EmailSenderApp (.NET)"
-          onSuccess={(r) => console.log('[EmailSender] success:', r)}
-          onError={(e) => console.error('[EmailSender] error:', e)}
-        />
-      )}
-      {view === 'apps' && <AppsManager apiBaseUrl={API_BASE} theme={theme} />}
-      {view === 'ai'      && <AiChat apiBaseUrl={API_BASE} apiKey={apiKey} theme={theme} />}
-      {view === 'account'  && <AccountDashboard apiBaseUrl={API_BASE} theme={theme} />}
+      {/* ── Top Navigation Bar ── */}
+      <nav style={{
+        background: vars.navBg,
+        borderBottom: `1px solid ${vars.border}`,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        boxShadow: '0 1px 3px rgba(0,0,0,.06)',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '0 20px',
+          height: 54,
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
+          {/* Brand */}
+          <div style={{
+            fontWeight: 800,
+            fontSize: 15,
+            color: vars.accent,
+            letterSpacing: '-0.02em',
+            marginRight: 12,
+            userSelect: 'none',
+          }}>
+            ✉ EmailSender
+          </div>
+
+          {/* Nav Tabs */}
+          <button style={navBtn(view === 'send')}    onClick={() => setView('send')}>
+            Send Email
+          </button>
+          <button style={navBtn(view === 'account')} onClick={() => setView('account')}>
+            Account
+          </button>
+
+          <div style={{ flex: 1 }} />
+
+          {/* API Key input — visible only on Send tab */}
+          {view === 'send' && (
+            <input
+              type="password"
+              placeholder="X-Api-Key"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                localStorage.setItem('es_api_key', e.target.value);
+              }}
+              style={{
+                width: 260,
+                padding: '6px 11px',
+                border: `1px solid ${vars.border}`,
+                background: isDark ? '#09090b' : '#f4f4f5',
+                color: vars.text,
+                borderRadius: 8,
+                font: 'inherit',
+                fontSize: 12,
+                fontFamily: 'ui-monospace, monospace',
+                outline: 'none',
+                marginRight: 8,
+              }}
+            />
+          )}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+            title="Toggle theme"
+            style={{
+              background: 'transparent',
+              border: `1px solid ${vars.border}`,
+              color: vars.muted,
+              padding: '5px 11px',
+              borderRadius: 8,
+              cursor: 'pointer',
+              font: 'inherit',
+              fontSize: 12,
+            }}
+          >
+            {isDark ? '☀ Light' : '☾ Dark'}
+          </button>
+        </div>
+      </nav>
+
+      {/* ── Main Content ── */}
+      <main style={{ width: '100%' }}>
+        {view === 'send' && (
+          <div style={{ padding: '28px 24px' }}>
+            <EmailSender
+              apiBaseUrl={API_BASE}
+              apiKey={apiKey}
+              templates={[]}
+              theme={theme}
+              subtitle="Backed by EmailSenderApp (.NET)"
+              onSuccess={(r) => console.log('[EmailSender] success:', r)}
+              onError={(e)   => console.error('[EmailSender] error:', e)}
+            />
+          </div>
+        )}
+        {view === 'account' && (
+          <AccountDashboard apiBaseUrl={API_BASE} theme={theme} />
+        )}
+      </main>
     </div>
   );
 }

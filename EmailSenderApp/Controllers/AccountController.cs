@@ -41,6 +41,7 @@ namespace EmailApi.Controllers
                 Username     = req.Username.Trim(),
                 Email        = req.Email?.Trim(),
                 PasswordHash = PasswordHelper.Hash(req.Password),
+                Role         = "user",
             };
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
@@ -114,25 +115,22 @@ namespace EmailApi.Controllers
 
             var app = new AppEntity
             {
-                UserId       = userId,
-                AppName      = req.Name.Trim(),
-                SenderEmail  = req.SenderEmail.Trim(),
-                SenderName   = req.SenderName?.Trim(),
-                SmtpUsername = req.SmtpUsername?.Trim(),
-                SmtpPassword = req.SmtpPassword,
-                SmtpServer   = req.SmtpServer?.Trim(),
-                SmtpPort     = req.SmtpPort,
+                UserId         = userId,
+                AppName        = req.Name.Trim(),
+                SenderEmail    = req.SenderEmail.Trim(),
+                SenderName     = req.SenderName?.Trim(),
+                SmtpUsername   = req.SmtpUsername?.Trim(),
+                SmtpPassword   = req.SmtpPassword,
+                SmtpServer     = req.SmtpServer?.Trim(),
+                SmtpPort       = req.SmtpPort,
                 SmtpEncryption = req.SmtpEncryption?.Trim(),
-                Description  = req.Description?.Trim(),
-                AppKey       = GenerateApiKey(),
-                IsActive     = true,
+                Description    = req.Description?.Trim(),
+                AppKey         = GenerateApiKey(),
+                IsActive       = true,
             };
 
             _db.Apps.Add(app);
-            try
-            {
-                await _db.SaveChangesAsync();
-            }
+            try { await _db.SaveChangesAsync(); }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
                 when (ex.InnerException?.Message.Contains("UQ_Apps_AppName") == true ||
                       ex.InnerException?.Message.Contains("duplicate key") == true)
@@ -152,15 +150,15 @@ namespace EmailApi.Controllers
             var app = await _db.Apps.FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (app == null) return NotFound();
 
-            if (req.Name        != null) app.AppName      = req.Name.Trim();
-            if (req.SenderEmail != null) app.SenderEmail  = req.SenderEmail.Trim();
-            if (req.SenderName  != null) app.SenderName   = req.SenderName.Trim();
-            if (req.SmtpUsername!= null) app.SmtpUsername = req.SmtpUsername.Trim();
-            if (req.SmtpPassword!= null) app.SmtpPassword = req.SmtpPassword;
-            if (req.SmtpServer  != null) app.SmtpServer   = req.SmtpServer.Trim();
-            if (req.SmtpPort.HasValue)   app.SmtpPort     = req.SmtpPort.Value;
-            if (req.SmtpEncryption != null) app.SmtpEncryption = req.SmtpEncryption.Trim();
-            if (req.IsActive.HasValue)   app.IsActive     = req.IsActive.Value;
+            if (req.Name           != null) app.AppName        = req.Name.Trim();
+            if (req.SenderEmail    != null) app.SenderEmail     = req.SenderEmail.Trim();
+            if (req.SenderName     != null) app.SenderName      = req.SenderName.Trim();
+            if (req.SmtpUsername   != null) app.SmtpUsername    = req.SmtpUsername.Trim();
+            if (req.SmtpPassword   != null) app.SmtpPassword    = req.SmtpPassword;
+            if (req.SmtpServer     != null) app.SmtpServer      = req.SmtpServer.Trim();
+            if (req.SmtpPort.HasValue)      app.SmtpPort        = req.SmtpPort.Value;
+            if (req.SmtpEncryption != null) app.SmtpEncryption  = req.SmtpEncryption.Trim();
+            if (req.IsActive.HasValue)      app.IsActive        = req.IsActive.Value;
             app.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -285,6 +283,286 @@ namespace EmailApi.Controllers
             return NoContent();
         }
 
+        // ── Email Logs (own logs) ─────────────────────────────────────────────
+
+        /// <summary>GET /api/account/logs — returns paginated logs for the current user's services.</summary>
+        [HttpGet("logs")]
+        public async Task<IActionResult> GetMyLogs(
+            [FromQuery] int    skip   = 0,
+            [FromQuery] int    take   = 100,
+            [FromQuery] string? status = null,
+            [FromQuery] string? from   = null,
+            [FromQuery] string? to     = null)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var query = _db.EmailLogs.Where(l => l.App!.UserId == userId);
+
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(l => l.Status == status);
+            if (!string.IsNullOrWhiteSpace(from) && DateTime.TryParse(from, out var fromDt))
+                query = query.Where(l => l.SentAt >= fromDt.ToUniversalTime());
+            if (!string.IsNullOrWhiteSpace(to) && DateTime.TryParse(to, out var toDt))
+                query = query.Where(l => l.SentAt <= toDt.ToUniversalTime());
+
+            var total = await query.CountAsync();
+            var rows  = await query
+                .OrderByDescending(l => l.SentAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(l => new {
+                    l.Id, l.AppId, l.AppName, l.Subject, l.Recipients, l.RecipientCount,
+                    l.Status, l.ErrorMessage, l.IsHtml, l.AttachmentCount, l.AttachmentBytes,
+                    l.IpAddress, l.SentAt, l.DurationMs,
+                })
+                .ToListAsync();
+
+            return Ok(new { total, rows });
+        }
+
+        // ── Admin Endpoints (superadmin only) ─────────────────────────────────
+
+        /// <summary>GET /api/account/admin/users — list all users.</summary>
+        [HttpGet("admin/users")]
+        public async Task<IActionResult> AdminListUsers(
+            [FromQuery] int skip = 0,
+            [FromQuery] int take = 100)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var total = await _db.Users.CountAsync();
+            var users = await _db.Users
+                .OrderByDescending(u => u.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(u => new {
+                    u.Id, u.Username, u.Email, u.Role, u.IsActive, u.CreatedAt,
+                    servicesCount = _db.Apps.Count(a => a.UserId == u.Id),
+                })
+                .ToListAsync();
+
+            return Ok(new { total, users });
+        }
+
+        /// <summary>PATCH /api/account/admin/users/{id}/status — activate or deactivate a user.</summary>
+        [HttpPatch("admin/users/{id:int}/status")]
+        public async Task<IActionResult> AdminUpdateUserStatus(int id, [FromBody] AdminUserStatusRequest req)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            var user = await _db.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.IsActive  = req.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { user.Id, user.Username, user.Role, user.IsActive });
+        }
+
+        /// <summary>PATCH /api/account/admin/users/{id}/role — change a user's role.</summary>
+        [HttpPatch("admin/users/{id:int}/role")]
+        public async Task<IActionResult> AdminUpdateUserRole(int id, [FromBody] AdminUserRoleRequest req)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            if (req.Role != "user" && req.Role != "superadmin")
+                return BadRequest(new { error = "Role must be 'user' or 'superadmin'." });
+
+            var user = await _db.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.Role      = req.Role;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { user.Id, user.Username, user.Role, user.IsActive });
+        }
+
+        /// <summary>GET /api/account/admin/logs — all logs with optional filters.</summary>
+        [HttpGet("admin/logs")]
+        public async Task<IActionResult> AdminGetLogs(
+            [FromQuery] int?    userId = null,
+            [FromQuery] int?    appId  = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? from   = null,
+            [FromQuery] string? to     = null,
+            [FromQuery] int     skip   = 0,
+            [FromQuery] int     take   = 200)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var query = _db.EmailLogs.AsQueryable();
+
+            if (userId.HasValue)
+                query = query.Where(l => l.App!.UserId == userId.Value);
+            if (appId.HasValue)
+                query = query.Where(l => l.AppId == appId.Value);
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(l => l.Status == status);
+            if (!string.IsNullOrWhiteSpace(from) && DateTime.TryParse(from, out var fromDt))
+                query = query.Where(l => l.SentAt >= fromDt.ToUniversalTime());
+            if (!string.IsNullOrWhiteSpace(to) && DateTime.TryParse(to, out var toDt))
+                query = query.Where(l => l.SentAt <= toDt.ToUniversalTime());
+
+            var total = await query.CountAsync();
+            var rows  = await query
+                .OrderByDescending(l => l.SentAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(l => new {
+                    l.Id, l.AppId, l.AppName, l.Subject, l.Recipients, l.RecipientCount,
+                    l.Status, l.ErrorMessage, l.IsHtml, l.AttachmentCount, l.AttachmentBytes,
+                    l.IpAddress, l.SentAt, l.DurationMs,
+                    ownerId       = l.App != null ? l.App.UserId : (int?)null,
+                    ownerUsername = l.App != null ? _db.Users
+                        .Where(u => u.Id == l.App.UserId)
+                        .Select(u => u.Username)
+                        .FirstOrDefault() : null,
+                })
+                .ToListAsync();
+
+            return Ok(new { total, rows });
+        }
+
+        /// <summary>GET /api/account/admin/services — all services across all users.</summary>
+        [HttpGet("admin/services")]
+        public async Task<IActionResult> AdminListServices(
+            [FromQuery] int? userId = null,
+            [FromQuery] int  skip   = 0,
+            [FromQuery] int  take   = 100)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var query = _db.Apps.AsQueryable();
+            if (userId.HasValue) query = query.Where(a => a.UserId == userId.Value);
+
+            var total    = await query.CountAsync();
+            var services = await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(a => new {
+                    a.Id, a.AppName, a.AppKey, a.SenderEmail, a.SenderName,
+                    a.SmtpServer, a.SmtpPort, a.SmtpEncryption,
+                    a.IsActive, a.UserId, a.Description, a.CreatedAt, a.UpdatedAt, a.LastUsedAt,
+                    ownerUsername = _db.Users
+                        .Where(u => u.Id == a.UserId)
+                        .Select(u => u.Username)
+                        .FirstOrDefault(),
+                    logsCount = _db.EmailLogs.Count(l => l.AppId == a.Id),
+                })
+                .ToListAsync();
+
+            return Ok(new { total, services });
+        }
+
+        /// <summary>POST /api/account/admin/services — create a service for any user.</summary>
+        [HttpPost("admin/services")]
+        public async Task<IActionResult> AdminCreateService([FromBody] AdminCreateServiceRequest req)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            if (string.IsNullOrWhiteSpace(req.Name))
+                return BadRequest(new { error = "Service name is required." });
+            if (string.IsNullOrWhiteSpace(req.SenderEmail))
+                return BadRequest(new { error = "Sender email is required." });
+            if (req.UserId.HasValue && !await _db.Users.AnyAsync(u => u.Id == req.UserId.Value))
+                return NotFound(new { error = "Target user not found." });
+
+            var app = new AppEntity
+            {
+                UserId         = req.UserId,
+                AppName        = req.Name.Trim(),
+                SenderEmail    = req.SenderEmail.Trim(),
+                SenderName     = req.SenderName?.Trim(),
+                SmtpUsername   = req.SmtpUsername?.Trim(),
+                SmtpPassword   = req.SmtpPassword,
+                SmtpServer     = req.SmtpServer?.Trim(),
+                SmtpPort       = req.SmtpPort,
+                SmtpEncryption = req.SmtpEncryption?.Trim(),
+                Description    = req.Description?.Trim(),
+                AppKey         = GenerateApiKey(),
+                IsActive       = true,
+            };
+
+            _db.Apps.Add(app);
+            try { await _db.SaveChangesAsync(); }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+                when (ex.InnerException?.Message.Contains("duplicate key") == true)
+            {
+                return Conflict(new { error = "A service with this name already exists." });
+            }
+            return Ok(ToServiceDto(app));
+        }
+
+        /// <summary>PATCH /api/account/admin/services/{id} — update any service.</summary>
+        [HttpPatch("admin/services/{id:int}")]
+        public async Task<IActionResult> AdminUpdateService(int id, [FromBody] UpdateServiceRequest req)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            var app = await _db.Apps.FindAsync(id);
+            if (app == null) return NotFound();
+
+            if (req.Name           != null) app.AppName        = req.Name.Trim();
+            if (req.SenderEmail    != null) app.SenderEmail     = req.SenderEmail.Trim();
+            if (req.SenderName     != null) app.SenderName      = req.SenderName.Trim();
+            if (req.SmtpUsername   != null) app.SmtpUsername    = req.SmtpUsername.Trim();
+            if (req.SmtpPassword   != null) app.SmtpPassword    = req.SmtpPassword;
+            if (req.SmtpServer     != null) app.SmtpServer      = req.SmtpServer.Trim();
+            if (req.SmtpPort.HasValue)      app.SmtpPort        = req.SmtpPort.Value;
+            if (req.SmtpEncryption != null) app.SmtpEncryption  = req.SmtpEncryption.Trim();
+            if (req.IsActive.HasValue)      app.IsActive        = req.IsActive.Value;
+            app.UpdatedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+            return Ok(ToServiceDto(app));
+        }
+
+        /// <summary>DELETE /api/account/admin/services/{id} — deactivate any service.</summary>
+        [HttpDelete("admin/services/{id:int}")]
+        public async Task<IActionResult> AdminDeleteService(int id)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            var app = await _db.Apps.FindAsync(id);
+            if (app == null) return NotFound();
+
+            app.IsActive  = false;
+            app.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
+        /// <summary>POST /api/account/admin/services/{id}/regenerate-key — regenerate API key for any service.</summary>
+        [HttpPost("admin/services/{id:int}/regenerate-key")]
+        public async Task<IActionResult> AdminRegenerateKey(int id)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            var app = await _db.Apps.FindAsync(id);
+            if (app == null) return NotFound();
+
+            app.AppKey    = GenerateApiKey();
+            app.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return Ok(ToServiceDto(app));
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private int? GetUserId()
@@ -297,9 +575,19 @@ namespace EmailApi.Controllers
             return int.TryParse(sub, out var id) ? id : null;
         }
 
+        private string? GetUserRole()
+        {
+            var auth = Request.Headers.Authorization.ToString();
+            if (!auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return null;
+            var principal = _tokens.Validate(auth[7..]);
+            return principal?.FindFirstValue(ClaimTypes.Role);
+        }
+
+        private bool IsSuperAdmin() => GetUserRole() == "superadmin";
+
         private static object ToUserDto(UserEntity u) => new
         {
-            u.Id, u.Username, u.Email, u.CreatedAt
+            u.Id, u.Username, u.Email, u.CreatedAt, role = u.Role
         };
 
         private static object ToServiceDto(AppEntity a) => new
@@ -382,6 +670,30 @@ namespace EmailApi.Controllers
             public string? Subject { get; set; }
             public string? Body    { get; set; }
             public bool    IsHtml  { get; set; } = true;
+        }
+
+        public class AdminUserStatusRequest
+        {
+            public bool IsActive { get; set; }
+        }
+
+        public class AdminUserRoleRequest
+        {
+            public string Role { get; set; } = "user";
+        }
+
+        public class AdminCreateServiceRequest
+        {
+            public int?    UserId        { get; set; }
+            public string  Name          { get; set; } = string.Empty;
+            public string  SenderEmail   { get; set; } = string.Empty;
+            public string? SenderName    { get; set; }
+            public string? SmtpUsername  { get; set; }
+            public string? SmtpPassword  { get; set; }
+            public string? SmtpServer    { get; set; }
+            public int?    SmtpPort      { get; set; }
+            public string? SmtpEncryption { get; set; }
+            public string? Description   { get; set; }
         }
     }
 }

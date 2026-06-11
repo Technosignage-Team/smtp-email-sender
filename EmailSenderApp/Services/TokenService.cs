@@ -68,6 +68,7 @@ namespace EmailApi.Services
                 new Claim(JwtRegisteredClaimNames.Sub,         user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName,  user.Username),
                 new Claim(JwtRegisteredClaimNames.Jti,         Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role,                     user.Role),
             };
 
             var token = new JwtSecurityToken(

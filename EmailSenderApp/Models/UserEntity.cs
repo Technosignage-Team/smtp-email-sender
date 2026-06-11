@@ -17,6 +17,10 @@ namespace EmailApi.Models
 
         public bool IsActive { get; set; } = true;
 
+        /// <summary>User role: "user" (default) or "superadmin".</summary>
+        [MaxLength(20)]
+        public string Role { get; set; } = "user";
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

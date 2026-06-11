@@ -40,15 +40,35 @@
         <member name="M:EmailApi.Controllers.AccountController.DeleteTemplate(System.Int32,System.Int32)">
             <summary>DELETE /api/account/services/{id}/templates/{tid}</summary>
         </member>
-        <member name="M:EmailApi.Controllers.AiChatController.Chat(EmailApi.Models.AiChatRequest)">
-             <summary>
-             AI chat endpoint. Accepts a user message + conversation history, asks Gemini,
-             and — if Gemini wants to send an email — executes it via the local email service.
-            
-             Auth:
-               - Email API key: X-Api-Key header OR emailApiKey JSON field.
-               - Gemini API key: appsettings.json "Gemini:ApiKey" OR X-Gemini-Key header OR geminiApiKey JSON field.
-             </summary>
+        <member name="M:EmailApi.Controllers.AccountController.GetMyLogs(System.Int32,System.Int32,System.String,System.String,System.String)">
+            <summary>GET /api/account/logs — returns paginated logs for the current user's services.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminListUsers(System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/users — list all users.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateUserStatus(System.Int32,EmailApi.Controllers.AccountController.AdminUserStatusRequest)">
+            <summary>PATCH /api/account/admin/users/{id}/status — activate or deactivate a user.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateUserRole(System.Int32,EmailApi.Controllers.AccountController.AdminUserRoleRequest)">
+            <summary>PATCH /api/account/admin/users/{id}/role — change a user's role.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminGetLogs(System.Nullable{System.Int32},System.Nullable{System.Int32},System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/logs — all logs with optional filters.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminListServices(System.Nullable{System.Int32},System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/services — all services across all users.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminCreateService(EmailApi.Controllers.AccountController.AdminCreateServiceRequest)">
+            <summary>POST /api/account/admin/services — create a service for any user.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateService(System.Int32,EmailApi.Controllers.AccountController.UpdateServiceRequest)">
+            <summary>PATCH /api/account/admin/services/{id} — update any service.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminDeleteService(System.Int32)">
+            <summary>DELETE /api/account/admin/services/{id} — deactivate any service.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminRegenerateKey(System.Int32)">
+            <summary>POST /api/account/admin/services/{id}/regenerate-key — regenerate API key for any service.</summary>
         </member>
         <member name="M:EmailApi.Controllers.EmailController.SendEmail(EmailApi.Models.SendEmailForm)">
              <summary>
@@ -86,26 +106,6 @@
             <summary>
             Legacy JSON endpoint kept for backward compatibility. Also requires X-Api-Key.
             </summary>
-        </member>
-        <member name="T:EmailApi.Models.AiChatRequest">
-            <summary>
-            Request body for POST /api/ai/chat — the AI-friendly chat endpoint.
-            </summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatRequest.Message">
-            <summary>The latest user message to process.</summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatRequest.History">
-            <summary>Previous conversation turns (oldest first).</summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatRequest.GeminiApiKey">
-            <summary>Optional Gemini API key — used when the server has none configured.</summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatRequest.EmailApiKey">
-            <summary>Optional email API key — alternative to the X-Api-Key header.</summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatHistoryItem.Role">
-            <summary>"user" or "assistant"</summary>
         </member>
         <member name="P:EmailApi.Models.AppEntity.UserId">
             <summary>Owner account. Null for legacy admin-created apps.</summary>
@@ -231,6 +231,9 @@
             <summary>
             Optional API key (alternative to the X-Api-Key header).
             </summary>
+        </member>
+        <member name="P:EmailApi.Models.UserEntity.Role">
+            <summary>User role: "user" (default) or "superadmin".</summary>
         </member>
         <member name="T:EmailApi.Services.ServiceSmtpConfig">
             <summary>

@@ -37,7 +37,6 @@ async function startServer() {
 
   app.use("/api/email",   proxyTo(BACKEND_HOST, BACKEND_PORT));
   app.use("/api/apps",    proxyTo(BACKEND_HOST, BACKEND_PORT));
-  app.use("/api/ai",      proxyTo(BACKEND_HOST, BACKEND_PORT));
   app.use("/api/account", proxyTo(BACKEND_HOST, BACKEND_PORT));
 
   app.use(express.json());
