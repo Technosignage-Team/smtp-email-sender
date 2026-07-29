@@ -57,6 +57,27 @@ namespace EmailApi.Models
         [MaxLength(20)]
         public string? SmtpEncryption { get; set; }
 
+        // ── Inbound IMAP listening ────────────────────────────────────────────
+        public bool ImapEnabled { get; set; }
+
+        [MaxLength(256)]
+        public string? ImapServer { get; set; }
+
+        public int? ImapPort { get; set; }
+
+        [MaxLength(256)]
+        public string? ImapUsername { get; set; }
+
+        [MaxLength(512)]
+        public string? ImapPassword { get; set; }
+
+        public bool ImapUseSsl { get; set; } = true;
+
+        /// <summary>Last processed IMAP UID — used to fetch only new messages.</summary>
+        public long? LastImapUid { get; set; }
+
+        public DateTime? LastImapPollAt { get; set; }
+
         public ICollection<EmailTemplateEntity> Templates { get; set; } = new List<EmailTemplateEntity>();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

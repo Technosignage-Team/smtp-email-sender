@@ -125,6 +125,12 @@ namespace EmailApi.Controllers
                 SmtpPort       = req.SmtpPort,
                 SmtpEncryption = req.SmtpEncryption?.Trim(),
                 Description    = req.Description?.Trim(),
+                ImapEnabled    = req.ImapEnabled ?? false,
+                ImapServer     = ImapMailboxService.NormalizeMailHost(req.ImapServer),
+                ImapPort       = req.ImapPort,
+                ImapUsername   = req.ImapUsername?.Trim(),
+                ImapPassword   = req.ImapPassword,
+                ImapUseSsl     = req.ImapUseSsl ?? true,
                 AppKey         = GenerateApiKey(),
                 IsActive       = true,
             };
@@ -159,6 +165,12 @@ namespace EmailApi.Controllers
             if (req.SmtpPort.HasValue)      app.SmtpPort        = req.SmtpPort.Value;
             if (req.SmtpEncryption != null) app.SmtpEncryption  = req.SmtpEncryption.Trim();
             if (req.IsActive.HasValue)      app.IsActive        = req.IsActive.Value;
+            if (req.ImapEnabled.HasValue)   app.ImapEnabled     = req.ImapEnabled.Value;
+            if (req.ImapServer   != null)   app.ImapServer      = ImapMailboxService.NormalizeMailHost(req.ImapServer);
+            if (req.ImapPort.HasValue)      app.ImapPort        = req.ImapPort.Value;
+            if (req.ImapUsername != null)   app.ImapUsername    = req.ImapUsername.Trim();
+            if (req.ImapPassword != null)   app.ImapPassword    = req.ImapPassword;
+            if (req.ImapUseSsl.HasValue)    app.ImapUseSsl      = req.ImapUseSsl.Value;
             app.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -318,6 +330,230 @@ namespace EmailApi.Controllers
                     l.Id, l.AppId, l.AppName, l.Subject, l.Recipients, l.RecipientCount,
                     l.Status, l.ErrorMessage, l.IsHtml, l.AttachmentCount, l.AttachmentBytes,
                     l.IpAddress, l.SentAt, l.DurationMs,
+                })
+                .ToListAsync();
+
+            return Ok(new { total, rows });
+        }
+
+        // ── Inbound Emails (own services) ─────────────────────────────────────
+
+        /// <summary>GET /api/account/inbound/emails</summary>
+        [HttpGet("inbound/emails")]
+        public async Task<IActionResult> GetMyInboundEmails(
+            [FromQuery] int? appId = null,
+            [FromQuery] int skip = 0,
+            [FromQuery] int take = 100,
+            [FromQuery] bool? isRead = null)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var query = _db.IncomingEmails.Where(e => e.App!.UserId == userId);
+            if (appId.HasValue) query = query.Where(e => e.AppId == appId.Value);
+            if (isRead.HasValue) query = query.Where(e => e.IsRead == isRead.Value);
+
+            var total = await query.CountAsync();
+            var rows  = await query
+                .OrderByDescending(e => e.ReceivedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(e => new {
+                    e.Id, e.AppId, e.AppName, e.FromAddress, e.FromName, e.ToAddress,
+                    e.Subject, e.BodyPreview, e.HasAttachments, e.AttachmentCount,
+                    e.IsRead, e.ReceivedAt,
+                })
+                .ToListAsync();
+
+            return Ok(new { total, rows });
+        }
+
+        /// <summary>GET /api/account/inbound/emails/{id}</summary>
+        [HttpGet("inbound/emails/{id:long}")]
+        public async Task<IActionResult> GetMyInboundEmail(long id)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            var email = await _db.IncomingEmails
+                .FirstOrDefaultAsync(e => e.Id == id && e.App!.UserId == userId);
+
+            if (email == null) return NotFound();
+
+            return Ok(new {
+                email.Id, email.AppId, email.AppName,
+                from = email.FromAddress, fromName = email.FromName, to = email.ToAddress,
+                email.Subject, email.BodyPreview, bodyText = email.BodyText, bodyHtml = email.BodyHtml,
+                email.HasAttachments, email.AttachmentCount, email.IsRead, email.ReceivedAt,
+                messageId = email.MessageId,
+            });
+        }
+
+        /// <summary>PATCH /api/account/inbound/emails/{id}/read</summary>
+        [HttpPatch("inbound/emails/{id:long}/read")]
+        public async Task<IActionResult> MarkMyInboundRead(long id, [FromBody] InboundMarkReadRequest req)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            var email = await _db.IncomingEmails
+                .FirstOrDefaultAsync(e => e.Id == id && e.App!.UserId == userId);
+
+            if (email == null) return NotFound();
+
+            email.IsRead = req?.IsRead ?? true;
+            await _db.SaveChangesAsync();
+            return Ok(new { id = email.Id, isRead = email.IsRead });
+        }
+
+        // ── Webhook Subscriptions ─────────────────────────────────────────────
+
+        /// <summary>GET /api/account/services/{id}/webhooks</summary>
+        [HttpGet("services/{id:int}/webhooks")]
+        public async Task<IActionResult> ListWebhooks(int id)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            if (!await _db.Apps.AnyAsync(a => a.Id == id && a.UserId == userId))
+                return NotFound();
+
+            var hooks = await _db.WebhookSubscriptions
+                .Where(w => w.AppId == id)
+                .OrderByDescending(w => w.CreatedAt)
+                .Select(w => ToWebhookDto(w))
+                .ToListAsync();
+
+            return Ok(hooks);
+        }
+
+        /// <summary>POST /api/account/services/{id}/webhooks</summary>
+        [HttpPost("services/{id:int}/webhooks")]
+        public async Task<IActionResult> CreateWebhook(int id, [FromBody] WebhookRequest req)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            if (!await _db.Apps.AnyAsync(a => a.Id == id && a.UserId == userId))
+                return NotFound();
+
+            if (string.IsNullOrWhiteSpace(req.Url))
+                return BadRequest(new { error = "Webhook URL is required." });
+
+            if (!Uri.TryCreate(req.Url.Trim(), UriKind.Absolute, out var uri) ||
+                (uri.Scheme != "https" && uri.Scheme != "http"))
+                return BadRequest(new { error = "Webhook URL must be a valid http or https URL." });
+
+            var hook = new WebhookSubscriptionEntity
+            {
+                AppId   = id,
+                Url     = req.Url.Trim(),
+                Secret  = WebhookDeliveryService.GenerateWebhookSecret(),
+                Events  = string.IsNullOrWhiteSpace(req.Events) ? "email.received" : req.Events.Trim(),
+                IsActive = true,
+            };
+
+            _db.WebhookSubscriptions.Add(hook);
+            await _db.SaveChangesAsync();
+            return Ok(ToWebhookDto(hook));
+        }
+
+        /// <summary>PATCH /api/account/services/{id}/webhooks/{wid}</summary>
+        [HttpPatch("services/{id:int}/webhooks/{wid:int}")]
+        public async Task<IActionResult> UpdateWebhook(int id, int wid, [FromBody] WebhookUpdateRequest req)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            var hook = await _db.WebhookSubscriptions
+                .FirstOrDefaultAsync(w => w.Id == wid && w.AppId == id && w.App!.UserId == userId);
+
+            if (hook == null) return NotFound();
+
+            if (req.Url != null)
+            {
+                if (!Uri.TryCreate(req.Url.Trim(), UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != "https" && uri.Scheme != "http"))
+                    return BadRequest(new { error = "Invalid webhook URL." });
+                hook.Url = req.Url.Trim();
+            }
+            if (req.IsActive.HasValue) hook.IsActive = req.IsActive.Value;
+            if (req.Events != null) hook.Events = req.Events.Trim();
+            hook.UpdatedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+            return Ok(ToWebhookDto(hook));
+        }
+
+        /// <summary>DELETE /api/account/services/{id}/webhooks/{wid}</summary>
+        [HttpDelete("services/{id:int}/webhooks/{wid:int}")]
+        public async Task<IActionResult> DeleteWebhook(int id, int wid)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            var hook = await _db.WebhookSubscriptions
+                .FirstOrDefaultAsync(w => w.Id == wid && w.AppId == id && w.App!.UserId == userId);
+
+            if (hook == null) return NotFound();
+
+            _db.WebhookSubscriptions.Remove(hook);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
+        /// <summary>POST /api/account/services/{id}/webhooks/{wid}/regenerate-secret</summary>
+        [HttpPost("services/{id:int}/webhooks/{wid:int}/regenerate-secret")]
+        public async Task<IActionResult> RegenerateWebhookSecret(int id, int wid)
+        {
+            var userId = GetUserId();
+            if (userId == null) return Unauthorized(new { error = "Not authenticated." });
+
+            var hook = await _db.WebhookSubscriptions
+                .FirstOrDefaultAsync(w => w.Id == wid && w.AppId == id && w.App!.UserId == userId);
+
+            if (hook == null) return NotFound();
+
+            hook.Secret    = WebhookDeliveryService.GenerateWebhookSecret();
+            hook.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return Ok(ToWebhookDto(hook));
+        }
+
+        /// <summary>GET /api/account/admin/inbound/emails — all inbound emails (superadmin).</summary>
+        [HttpGet("admin/inbound/emails")]
+        public async Task<IActionResult> AdminGetInboundEmails(
+            [FromQuery] int? userId = null,
+            [FromQuery] int? appId = null,
+            [FromQuery] bool? isRead = null,
+            [FromQuery] int skip = 0,
+            [FromQuery] int take = 200)
+        {
+            if (!IsSuperAdmin()) return Unauthorized(new { error = "Superadmin access required." });
+
+            take = Math.Clamp(take, 1, 500);
+            skip = Math.Max(0, skip);
+
+            var query = _db.IncomingEmails.AsQueryable();
+            if (userId.HasValue) query = query.Where(e => e.App!.UserId == userId.Value);
+            if (appId.HasValue)  query = query.Where(e => e.AppId == appId.Value);
+            if (isRead.HasValue) query = query.Where(e => e.IsRead == isRead.Value);
+
+            var total = await query.CountAsync();
+            var rows  = await query
+                .OrderByDescending(e => e.ReceivedAt)
+                .Skip(skip)
+                .Take(take)
+                .Select(e => new {
+                    e.Id, e.AppId, e.AppName, e.FromAddress, e.FromName, e.ToAddress,
+                    e.Subject, e.BodyPreview, e.HasAttachments, e.IsRead, e.ReceivedAt,
+                    ownerUsername = _db.Users
+                        .Where(u => u.Id == e.App!.UserId)
+                        .Select(u => u.Username)
+                        .FirstOrDefault(),
                 })
                 .ToListAsync();
 
@@ -495,6 +731,12 @@ namespace EmailApi.Controllers
                 SmtpPort       = req.SmtpPort,
                 SmtpEncryption = req.SmtpEncryption?.Trim(),
                 Description    = req.Description?.Trim(),
+                ImapEnabled    = req.ImapEnabled ?? false,
+                ImapServer     = ImapMailboxService.NormalizeMailHost(req.ImapServer),
+                ImapPort       = req.ImapPort,
+                ImapUsername   = req.ImapUsername?.Trim(),
+                ImapPassword   = req.ImapPassword,
+                ImapUseSsl     = req.ImapUseSsl ?? true,
                 AppKey         = GenerateApiKey(),
                 IsActive       = true,
             };
@@ -602,11 +844,30 @@ namespace EmailApi.Controllers
             smtpServer      = a.SmtpServer,
             smtpPort        = a.SmtpPort,
             smtpEncryption  = a.SmtpEncryption,
+            imapEnabled     = a.ImapEnabled,
+            imapServer      = a.ImapServer,
+            imapPort        = a.ImapPort,
+            imapUsername    = a.ImapUsername,
+            hasImapPassword = !string.IsNullOrEmpty(a.ImapPassword),
+            imapUseSsl      = a.ImapUseSsl,
+            lastImapPollAt  = a.LastImapPollAt,
             a.IsActive,
             a.Description,
             a.CreatedAt,
             a.UpdatedAt,
             a.LastUsedAt,
+        };
+
+        private static object ToWebhookDto(WebhookSubscriptionEntity w) => new
+        {
+            w.Id,
+            w.AppId,
+            w.Url,
+            secret  = w.Secret,
+            w.Events,
+            w.IsActive,
+            w.CreatedAt,
+            w.UpdatedAt,
         };
 
         private static object ToTemplateDto(EmailTemplateEntity t) => new
@@ -649,6 +910,12 @@ namespace EmailApi.Controllers
             public int?    SmtpPort       { get; set; }
             public string? SmtpEncryption { get; set; }
             public string? Description    { get; set; }
+            public bool?   ImapEnabled    { get; set; }
+            public string? ImapServer     { get; set; }
+            public int?    ImapPort       { get; set; }
+            public string? ImapUsername   { get; set; }
+            public string? ImapPassword   { get; set; }
+            public bool?   ImapUseSsl     { get; set; }
         }
 
         public class UpdateServiceRequest
@@ -662,6 +929,12 @@ namespace EmailApi.Controllers
             public int?    SmtpPort       { get; set; }
             public string? SmtpEncryption { get; set; }
             public bool?   IsActive       { get; set; }
+            public bool?   ImapEnabled    { get; set; }
+            public string? ImapServer     { get; set; }
+            public int?    ImapPort       { get; set; }
+            public string? ImapUsername   { get; set; }
+            public string? ImapPassword   { get; set; }
+            public bool?   ImapUseSsl     { get; set; }
         }
 
         public class TemplateRequest
@@ -694,6 +967,30 @@ namespace EmailApi.Controllers
             public int?    SmtpPort      { get; set; }
             public string? SmtpEncryption { get; set; }
             public string? Description   { get; set; }
+            public bool?   ImapEnabled   { get; set; }
+            public string? ImapServer    { get; set; }
+            public int?    ImapPort      { get; set; }
+            public string? ImapUsername  { get; set; }
+            public string? ImapPassword  { get; set; }
+            public bool?   ImapUseSsl    { get; set; }
+        }
+
+        public class InboundMarkReadRequest
+        {
+            public bool IsRead { get; set; } = true;
+        }
+
+        public class WebhookRequest
+        {
+            public string  Url    { get; set; } = string.Empty;
+            public string? Events { get; set; }
+        }
+
+        public class WebhookUpdateRequest
+        {
+            public string? Url      { get; set; }
+            public bool?   IsActive { get; set; }
+            public string? Events   { get; set; }
         }
     }
 }

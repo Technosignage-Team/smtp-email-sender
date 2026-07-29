@@ -2,6 +2,8 @@
 
 > Paste this file into the consumer app's repo (e.g. `docs/EMAIL_SENDER_INTEGRATION.md`)
 > and hand it to that app's Copilot / developer.
+>
+> **Receiving emails?** See [`EMAIL_INBOUND_INTEGRATION.md`](./EMAIL_INBOUND_INTEGRATION.md) for webhooks and the inbound REST API.
 
 ## What this service does
 We have a centralized email-sending HTTP API. Any app can send an email by POSTing
@@ -250,3 +252,9 @@ If `403`, the app is disabled — contact the EmailSender admin.
 4. **Retry on transient failure** (timeout, `5xx`) with exponential backoff (e.g. Polly in .NET). Do **not** retry on `400` / `401` / `403`.
 5. **Log the response** (status + body) so failures are diagnosable.
 6. **Use `/send-bulk`** when emailing multiple admins so they don't see each other's addresses.
+
+---
+
+## Related docs
+
+- Inbound (receive) integration: [`EMAIL_INBOUND_INTEGRATION.md`](./EMAIL_INBOUND_INTEGRATION.md)

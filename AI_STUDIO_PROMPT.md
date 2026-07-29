@@ -1,6 +1,8 @@
-# Google AI Studio — EmailSender API Integration Prompt
+# Google AI Studio — EmailSender API Integration Prompt (Send Email)
 
 Copy everything inside the box below and paste it as the **System Instructions** in Google AI Studio.
+
+> **Receiving emails / inbox notifications?** See [`AI_STUDIO_INBOUND_PROMPT.md`](./AI_STUDIO_INBOUND_PROMPT.md)
 
 ---
 

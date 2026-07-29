@@ -1,20 +1,27 @@
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\web.config
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\web.config
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\appsettings.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\appsettings.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.deps.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.runtimeconfig.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\EmailSenderApi.staticwebassets.endpoints.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\appsettings.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.deps.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
-E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\publish\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.deps.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.runtimeconfig.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.pdb
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Azure.Core.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Azure.Identity.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\BouncyCastle.Cryptography.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\MailKit.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.Bcl.AsyncInterfaces.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.Data.SqlClient.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.EntityFrameworkCore.dll
@@ -38,6 +45,7 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.IdentityModel
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.OpenApi.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.SqlServer.Server.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Microsoft.Win32.SystemEvents.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\MimeKit.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Swashbuckle.AspNetCore.Swagger.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Swashbuckle.AspNetCore.SwaggerGen.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -46,6 +54,7 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Drawing.Common.d
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.IdentityModel.Tokens.Jwt.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Memory.Data.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Runtime.Caching.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Security.Cryptography.Pkcs.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Security.Cryptography.ProtectedData.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Security.Permissions.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\System.Windows.Extensions.dll
@@ -59,5 +68,7 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net6.0
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net6.0\System.Drawing.Common.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 E:\Email sender\smtp-email-sender\EmailSenderApp\publish\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\publish\EmailSenderApi.xml

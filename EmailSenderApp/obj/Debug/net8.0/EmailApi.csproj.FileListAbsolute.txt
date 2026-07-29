@@ -92,3 +92,28 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish EmaolS
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\EmailSenderApi.xml
 E:\Email sender\smtp-email-sender\EmailSenderApp\obj\Debug\net8.0\EmailSenderApi.xml
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\BouncyCastle.Cryptography.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\MailKit.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\MimeKit.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\System.Security.Cryptography.Pkcs.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\web.config
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\EmailSenderApi.staticwebassets.endpoints.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\publish\appsettings.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.deps.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.runtimeconfig.json
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Debug\net8.0\publish\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json

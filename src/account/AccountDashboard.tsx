@@ -8,6 +8,7 @@ import {
   KeyRound, Loader2, LogOut, Mail, Pencil, Plus,
   RefreshCcw, Send, Shield, Trash2, User, X,
   FileText, Users, Settings, Filter, ChevronLeft, ChevronRight as ChevRight,
+  Inbox, Bell, Webhook,
 } from 'lucide-react';
 
 // ── Scoped CSS ────────────────────────────────────────────────────────────────
@@ -168,7 +169,23 @@ interface ServiceDto {
   senderEmail: string | null; senderName: string | null;
   smtpUsername: string | null; hasSmtpPassword: boolean;
   smtpServer: string | null; smtpPort: number | null; smtpEncryption: string | null;
+  imapEnabled: boolean; imapServer: string | null; imapPort: number | null;
+  imapUsername: string | null; hasImapPassword: boolean; imapUseSsl: boolean;
+  lastImapPollAt: string | null;
   isActive: boolean; description: string | null; createdAt: string;
+}
+
+interface InboundEmailDto {
+  id: number; appId: number; appName: string;
+  fromAddress: string; fromName: string | null; toAddress: string;
+  subject: string; bodyPreview: string | null;
+  hasAttachments: boolean; attachmentCount: number;
+  isRead: boolean; receivedAt: string;
+}
+
+interface WebhookDto {
+  id: number; appId: number; url: string; secret: string;
+  events: string; isActive: boolean; createdAt: string;
 }
 
 interface TemplateDto {
@@ -217,7 +234,7 @@ export interface AccountDashboardProps {
   theme: 'light' | 'dark';
 }
 
-type DashSection = 'services' | 'logs' | 'admin';
+type DashSection = 'services' | 'inbound' | 'logs' | 'admin';
 
 export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
   injectCss();
@@ -256,8 +273,18 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
     | { type: 'template'; appId: number; template?: TemplateDto }
     | { type: 'test'; service: ServiceDto }
     | { type: 'integrate'; service: ServiceDto }
+    | { type: 'webhooks'; service: ServiceDto }
+    | { type: 'inbound-detail'; email: InboundEmailDto }
     | null
   >(null);
+
+  // ── Inbound emails state ──────────────────────────────────────────────────
+  const [inbound,       setInbound]       = useState<InboundEmailDto[]>([]);
+  const [inboundTotal,  setInboundTotal]  = useState(0);
+  const [inboundPage,   setInboundPage]   = useState(0);
+  const [inboundUnread, setInboundUnread] = useState<boolean | ''>('');
+  const [inboundLoading,setInboundLoading]= useState(false);
+  const INBOUND_PAGE_SIZE = 50;
 
   // ── My Logs state ─────────────────────────────────────────────────────────
   const [logs,       setLogs]       = useState<LogDto[]>([]);
@@ -270,7 +297,7 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
   const LOGS_PAGE_SIZE = 50;
 
   // ── Admin state ───────────────────────────────────────────────────────────
-  const [adminTab,        setAdminTab]        = useState<'users' | 'services' | 'logs'>('users');
+  const [adminTab,        setAdminTab]        = useState<'users' | 'services' | 'logs' | 'inbound'>('users');
   const [adminUsers,      setAdminUsers]      = useState<AdminUserDto[]>([]);
   const [adminUsersTotal, setAdminUsersTotal] = useState(0);
   const [adminServices,   setAdminServices]   = useState<AdminServiceDto[]>([]);
@@ -284,6 +311,8 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
   const [adminLogFrom,    setAdminLogFrom]    = useState('');
   const [adminLogTo,      setAdminLogTo]      = useState('');
   const [adminLoading,    setAdminLoading]    = useState(false);
+  const [adminInbound,    setAdminInbound]    = useState<(InboundEmailDto & { ownerUsername?: string })[]>([]);
+  const [adminInboundTotal, setAdminInboundTotal] = useState(0);
   const [adminModal, setAdminModal] = useState<
     | { type: 'create-service' }
     | null
@@ -358,11 +387,22 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
 
   const copy = (text: string) => navigator.clipboard.writeText(text).catch(() => {});
 
+  const normalizeMailHost = (value: string) => {
+    let host = value.trim();
+    if (!host) return '';
+    host = host.replace(/^https?:\/\//i, '');
+    const slash = host.indexOf('/');
+    if (slash >= 0) host = host.slice(0, slash);
+    return host.replace(/\.+$/, '').trim();
+  };
+
   // ── Service CRUD ──────────────────────────────────────────────────────────
   const handleSaveService = useCallback(async (data: {
     name: string; senderEmail: string; senderName: string;
     smtpUsername: string; smtpPassword: string;
     smtpServer: string; smtpPort: string; smtpEncryption: string;
+    imapEnabled: boolean; imapServer: string; imapPort: string;
+    imapUsername: string; imapPassword: string; imapUseSsl: boolean;
   }, editId?: number) => {
     setBusy(true); setAlert(null);
     const payload = {
@@ -373,6 +413,12 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
       smtpServer: data.smtpServer || undefined,
       smtpPort: data.smtpPort ? parseInt(data.smtpPort) : undefined,
       smtpEncryption: data.smtpEncryption || undefined,
+      imapEnabled: data.imapEnabled,
+      imapServer: normalizeMailHost(data.imapServer) || undefined,
+      imapPort: data.imapPort ? parseInt(data.imapPort) : undefined,
+      imapUsername: data.imapUsername || undefined,
+      imapPassword: data.imapPassword || undefined,
+      imapUseSsl: data.imapUseSsl,
     };
     try {
       if (editId) {
@@ -452,6 +498,34 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
     } catch { /* silent */ } finally { setLogsLoading(false); }
   }, [api, logsStatus, logsFrom, logsTo]);
 
+  // ── Inbound Emails ────────────────────────────────────────────────────────
+  const loadMyInbound = useCallback(async (page = 0) => {
+    setInboundLoading(true);
+    try {
+      const params = new URLSearchParams({
+        skip: String(page * INBOUND_PAGE_SIZE), take: String(INBOUND_PAGE_SIZE),
+        ...(inboundUnread !== '' && { isRead: String(inboundUnread === false) }),
+      });
+      const res = await api('GET', `/api/account/inbound/emails?${params}`);
+      setInbound(res.rows); setInboundTotal(res.total); setInboundPage(page);
+    } catch { /* silent */ } finally { setInboundLoading(false); }
+  }, [api, inboundUnread]);
+
+  const markInboundRead = useCallback(async (id: number, isRead = true) => {
+    try {
+      await api('PATCH', `/api/account/inbound/emails/${id}/read`, { isRead });
+      setInbound(prev => prev.map(e => e.id === id ? { ...e, isRead } : e));
+    } catch { /* silent */ }
+  }, [api]);
+
+  const loadAdminInbound = useCallback(async () => {
+    setAdminLoading(true);
+    try {
+      const res = await api('GET', '/api/account/admin/inbound/emails?take=200');
+      setAdminInbound(res.rows); setAdminInboundTotal(res.total);
+    } catch { /* silent */ } finally { setAdminLoading(false); }
+  }, [api]);
+
   // ── Admin ─────────────────────────────────────────────────────────────────
   const loadAdminUsers = useCallback(async () => {
     setAdminLoading(true);
@@ -518,10 +592,12 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
   useEffect(() => {
     if (!user) return;
     if (section === 'logs') loadMyLogs(0);
+    if (section === 'inbound') loadMyInbound(0);
     if (section === 'admin' && isSuperAdmin) {
       if (adminTab === 'users')    loadAdminUsers();
       if (adminTab === 'services') loadAdminServices();
       if (adminTab === 'logs')     loadAdminLogs(0);
+      if (adminTab === 'inbound')  loadAdminInbound();
     }
   }, [section, adminTab]); // eslint-disable-line
 
@@ -589,8 +665,11 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
             <button className={`ad-section-tab${section === 'services' ? ' active' : ''}`} onClick={() => setSection('services')}>
               <Settings size={14} /> My Services
             </button>
+            <button className={`ad-section-tab${section === 'inbound' ? ' active' : ''}`} onClick={() => setSection('inbound')}>
+              <Inbox size={14} /> Inbox
+            </button>
             <button className={`ad-section-tab${section === 'logs' ? ' active' : ''}`} onClick={() => setSection('logs')}>
-              <FileText size={14} /> Email Logs
+              <FileText size={14} /> Sent Logs
             </button>
             {isSuperAdmin && (
               <button className={`ad-section-tab${section === 'admin' ? ' active' : ''}`} onClick={() => setSection('admin')}>
@@ -629,6 +708,7 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
                     onCopy={copy}
                     onTest={() => { loadTemplates(svc.id); setModal({ type: 'test', service: svc }); }}
                     onIntegrate={() => { loadTemplates(svc.id); setModal({ type: 'integrate', service: svc }); }}
+                    onWebhooks={() => setModal({ type: 'webhooks', service: svc })}
                     onAddTemplate={() => setModal({ type: 'template', appId: svc.id })}
                     onEditTemplate={(t) => setModal({ type: 'template', appId: svc.id, template: t })}
                     onDeleteTemplate={(tid) => handleDeleteTemplate(svc.id, tid)}
@@ -640,6 +720,88 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── INBOX (received emails) ── */}
+          {section === 'inbound' && (
+            <div className="ad-content">
+              <div className="ad-section-header">
+                <h3>Received Emails (Inbox)</h3>
+                <button className="ad-btn ad-btn-ghost ad-btn-sm" onClick={() => loadMyInbound(inboundPage)}>
+                  <RefreshCcw size={13} /> Refresh
+                </button>
+              </div>
+              <div className="ad-filter-bar">
+                <div className="ad-filter-field">
+                  <label>Filter</label>
+                  <select className="ad-input" value={inboundUnread === '' ? '' : inboundUnread ? 'unread' : 'read'}
+                    onChange={e => setInboundUnread(e.target.value === '' ? '' : e.target.value === 'unread')}>
+                    <option value="">All</option>
+                    <option value="unread">Unread only</option>
+                    <option value="read">Read only</option>
+                  </select>
+                </div>
+                <button className="ad-btn ad-btn-primary ad-btn-sm" onClick={() => loadMyInbound(0)}>
+                  <Filter size={13} /> Apply
+                </button>
+              </div>
+              {inboundLoading ? <div className="ad-empty"><Loader2 size={22} className="ad-spin" /></div> : (
+                <>
+                  <div className="ad-table-wrap">
+                    <table className="ad-table">
+                      <thead>
+                        <tr>
+                          <th>Service</th><th>From</th><th>Subject</th><th>Preview</th>
+                          <th>Received</th><th>Status</th><th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inbound.length === 0 && (
+                          <tr><td colSpan={7} className="ad-empty">
+                            No received emails yet. Enable IMAP on a service to start listening.
+                          </td></tr>
+                        )}
+                        {inbound.map(e => (
+                          <tr key={e.id} style={{ opacity: e.isRead ? 0.75 : 1 }}>
+                            <td style={{ fontSize: 12 }}>{e.appName}</td>
+                            <td style={{ fontSize: 12 }}>
+                              <div>{e.fromName ?? e.fromAddress}</div>
+                              <div style={{ color: 'var(--ad-muted)', fontSize: 11 }}>{e.fromAddress}</div>
+                            </td>
+                            <td><div className="ad-truncate" style={{ maxWidth: 220 }} title={e.subject}>{e.subject}</div></td>
+                            <td style={{ fontSize: 12, color: 'var(--ad-muted)' }}>
+                              <div className="ad-truncate" style={{ maxWidth: 260 }}>{e.bodyPreview ?? '—'}</div>
+                            </td>
+                            <td style={{ fontSize: 12, color: 'var(--ad-muted)', whiteSpace: 'nowrap' }}>{fmtDate(e.receivedAt)}</td>
+                            <td>
+                              <span className={`ad-badge ${e.isRead ? 'off' : 'on'}`}>{e.isRead ? 'Read' : 'New'}</span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button className="ad-btn ad-btn-ghost ad-btn-sm"
+                                  onClick={() => setModal({ type: 'inbound-detail', email: e })}>View</button>
+                                {!e.isRead && (
+                                  <button className="ad-btn ad-btn-ghost ad-btn-sm"
+                                    onClick={() => markInboundRead(e.id)}>Mark read</button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="ad-pagination">
+                    <span>{inboundTotal} total · page {inboundPage + 1}</span>
+                    <button className="ad-btn ad-btn-ghost ad-btn-sm" disabled={inboundPage === 0}
+                      onClick={() => loadMyInbound(inboundPage - 1)}><ChevronLeft size={14} /></button>
+                    <button className="ad-btn ad-btn-ghost ad-btn-sm"
+                      disabled={(inboundPage + 1) * INBOUND_PAGE_SIZE >= inboundTotal}
+                      onClick={() => loadMyInbound(inboundPage + 1)}><ChevRight size={14} /></button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -681,7 +843,10 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
                   <Settings size={13} style={{ display:'inline',marginRight:4 }} />All Services
                 </button>
                 <button className={`ad-sub-tab${adminTab === 'logs'     ? ' active' : ''}`} onClick={() => setAdminTab('logs')}>
-                  <FileText size={13} style={{ display:'inline',marginRight:4 }} />All Logs
+                  <FileText size={13} style={{ display:'inline',marginRight:4 }} />Sent Logs
+                </button>
+                <button className={`ad-sub-tab${adminTab === 'inbound'  ? ' active' : ''}`} onClick={() => setAdminTab('inbound')}>
+                  <Inbox size={13} style={{ display:'inline',marginRight:4 }} />All Inbox
                 </button>
               </div>
 
@@ -857,6 +1022,45 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
                   />
                 </>
               )}
+
+              {/* All Inbound Tab */}
+              {adminTab === 'inbound' && (
+                <>
+                  <div className="ad-section-header" style={{ marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, color: 'var(--ad-muted)' }}>{adminInboundTotal} received emails total</span>
+                    <button className="ad-btn ad-btn-ghost ad-btn-sm" onClick={loadAdminInbound}>
+                      <RefreshCcw size={13} /> Refresh
+                    </button>
+                  </div>
+                  {adminLoading ? <div className="ad-empty"><Loader2 size={20} className="ad-spin" /></div> : (
+                    <div className="ad-table-wrap">
+                      <table className="ad-table">
+                        <thead>
+                          <tr>
+                            <th>Owner</th><th>Service</th><th>From</th><th>Subject</th>
+                            <th>Received</th><th>Read</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminInbound.length === 0 && (
+                            <tr><td colSpan={6} className="ad-empty">No received emails found.</td></tr>
+                          )}
+                          {adminInbound.map(e => (
+                            <tr key={e.id}>
+                              <td style={{ fontSize: 12, color: 'var(--ad-muted)' }}>{e.ownerUsername ?? '—'}</td>
+                              <td style={{ fontSize: 12 }}>{e.appName}</td>
+                              <td style={{ fontSize: 12 }}>{e.fromAddress}</td>
+                              <td><div className="ad-truncate" style={{ maxWidth: 220 }}>{e.subject}</div></td>
+                              <td style={{ fontSize: 12, color: 'var(--ad-muted)' }}>{fmtDate(e.receivedAt)}</td>
+                              <td><span className={`ad-badge ${e.isRead ? 'off' : 'on'}`}>{e.isRead ? 'Read' : 'New'}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </>
@@ -880,6 +1084,14 @@ export function AccountDashboard({ apiBaseUrl, theme }: AccountDashboardProps) {
       {modal?.type === 'integrate' && (
         <IntegrateModal service={modal.service} templates={templates[modal.service.id] ?? []}
           apiBaseUrl={base} isDark={isDark} onClose={() => setModal(null)} />
+      )}
+      {modal?.type === 'webhooks' && (
+        <WebhooksModal service={modal.service} api={api} isDark={isDark} onClose={() => setModal(null)} />
+      )}
+      {modal?.type === 'inbound-detail' && (
+        <InboundDetailModal email={modal.email} api={api} isDark={isDark}
+          onClose={() => setModal(null)}
+          onMarkRead={(id) => { markInboundRead(id); setModal(null); }} />
       )}
 
       {/* ── ADMIN CREATE SERVICE MODAL ── */}
@@ -1013,11 +1225,11 @@ function LogsTable({ logs, loading, showOwner, total, page, pageSize, onPage }: 
 // ── ServiceCard ───────────────────────────────────────────────────────────────
 function ServiceCard({
   service, templates, isExpanded, onToggle, onEdit, onDelete,
-  onRegenKey, onCopy, onTest, onIntegrate, onAddTemplate, onEditTemplate, onDeleteTemplate,
+  onRegenKey, onCopy, onTest, onIntegrate, onWebhooks, onAddTemplate, onEditTemplate, onDeleteTemplate,
 }: {
   service: ServiceDto; templates?: TemplateDto[]; isExpanded: boolean;
   onToggle: () => void; onEdit: () => void; onDelete: () => void; onRegenKey: () => void;
-  onCopy: (s: string) => void; onTest: () => void; onIntegrate: () => void;
+  onCopy: (s: string) => void; onTest: () => void; onIntegrate: () => void; onWebhooks: () => void;
   onAddTemplate: () => void; onEditTemplate: (t: TemplateDto) => void; onDeleteTemplate: (tid: number) => void;
 }) {
   const [showKey, setShowKey] = useState(false);
@@ -1032,8 +1244,14 @@ function ServiceCard({
               <KeyRound size={11} />{service.smtpServer}:{service.smtpPort ?? 587} ({service.smtpEncryption ?? 'TLS'})
             </div>
           )}
+          {service.imapEnabled && (
+            <div className="ad-scard-meta" style={{ marginTop: 2 }}>
+              <Inbox size={11} />IMAP listening {service.lastImapPollAt ? `(last poll ${fmtDate(service.lastImapPollAt)})` : '(pending)'}
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {service.imapEnabled && <span className="ad-badge on" style={{ fontSize: 10 }}>IMAP</span>}
           <span className={`ad-badge ${service.isActive ? 'on' : 'off'}`}>{service.isActive ? 'Active' : 'Off'}</span>
           {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </div>
@@ -1069,6 +1287,7 @@ function ServiceCard({
         <button className="ad-btn ad-btn-ghost" onClick={onEdit}><Pencil size={12} /> Edit</button>
         <button className="ad-btn ad-btn-ghost" onClick={onTest}><Send size={12} /> Test</button>
         <button className="ad-btn ad-btn-ghost" onClick={onIntegrate}><Code2 size={12} /> Integrate</button>
+        <button className="ad-btn ad-btn-ghost" onClick={onWebhooks}><Webhook size={12} /> Webhooks</button>
         <button className="ad-btn ad-btn-danger" onClick={onDelete}><Trash2 size={12} /> Deactivate</button>
       </div>
     </div>
@@ -1078,7 +1297,11 @@ function ServiceCard({
 // ── ServiceModal ──────────────────────────────────────────────────────────────
 function ServiceModal({ service, busy, isDark, onClose, onSave }: {
   service?: ServiceDto; busy: boolean; isDark: boolean; onClose: () => void;
-  onSave: (data: { name: string; senderEmail: string; senderName: string; smtpUsername: string; smtpPassword: string; smtpServer: string; smtpPort: string; smtpEncryption: string; }) => void;
+  onSave: (data: {
+    name: string; senderEmail: string; senderName: string;
+    smtpUsername: string; smtpPassword: string; smtpServer: string; smtpPort: string; smtpEncryption: string;
+    imapEnabled: boolean; imapServer: string; imapPort: string; imapUsername: string; imapPassword: string; imapUseSsl: boolean;
+  }) => void;
 }) {
   const [name,           setName]           = useState(service?.name           ?? '');
   const [senderEmail,    setSenderEmail]    = useState(service?.senderEmail    ?? '');
@@ -1088,7 +1311,14 @@ function ServiceModal({ service, busy, isDark, onClose, onSave }: {
   const [smtpServer,     setSmtpServer]     = useState(service?.smtpServer     ?? '');
   const [smtpPort,       setSmtpPort]       = useState(service?.smtpPort?.toString() ?? '');
   const [smtpEncryption, setSmtpEncryption] = useState(service?.smtpEncryption ?? 'TLS');
+  const [imapEnabled,    setImapEnabled]    = useState(service?.imapEnabled    ?? false);
+  const [imapServer,     setImapServer]     = useState(service?.imapServer     ?? '');
+  const [imapPort,       setImapPort]       = useState(service?.imapPort?.toString() ?? '993');
+  const [imapUsername,   setImapUsername]   = useState(service?.imapUsername   ?? '');
+  const [imapPassword,   setImapPassword]   = useState('');
+  const [imapUseSsl,     setImapUseSsl]     = useState(service?.imapUseSsl      ?? true);
   const [showPass,       setShowPass]       = useState(false);
+  const [showImapPass,   setShowImapPass]   = useState(false);
 
   return (
     <div className="ad-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1131,10 +1361,50 @@ function ServiceModal({ service, busy, isDark, onClose, onSave }: {
             </div>
           </div>
         </div>
+
+        {/* IMAP inbound listening */}
+        <div style={{ borderTop: '1px solid var(--ad-border)', margin: '12px 0 14px', paddingTop: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ad-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
+            Inbound Email (IMAP) <small style={{ textTransform: 'none', fontWeight: 400 }}>— listen for received emails</small>
+          </div>
+          <div className="ad-field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" id="imapEnabledCb" checked={imapEnabled} onChange={e => setImapEnabled(e.target.checked)} style={{ width: 14, height: 14 }} />
+            <label htmlFor="imapEnabledCb" style={{ marginBottom: 0, cursor: 'pointer' }}>Enable IMAP listening for this service</label>
+          </div>
+          {imapEnabled && (
+            <>
+              <div className="ad-field"><label>IMAP Server <small style={{ fontWeight: 400 }}>(hostname only — no http://, blank = auto from SMTP)</small></label>
+                <input className="ad-input" value={imapServer} onChange={e => setImapServer(e.target.value)} placeholder="imappro.zoho.com" /></div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div className="ad-field" style={{ flex: 1 }}><label>IMAP Port</label>
+                  <input className="ad-input" type="number" value={imapPort} onChange={e => setImapPort(e.target.value)} placeholder="993" /></div>
+                <div className="ad-field" style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 20 }}>
+                  <input type="checkbox" id="imapSslCb" checked={imapUseSsl} onChange={e => setImapUseSsl(e.target.checked)} />
+                  <label htmlFor="imapSslCb" style={{ marginBottom: 0 }}>Use SSL</label>
+                </div>
+              </div>
+              <div className="ad-field"><label>IMAP Username <small style={{ fontWeight: 400 }}>(blank = use SMTP username)</small></label>
+                <input className="ad-input" value={imapUsername} onChange={e => setImapUsername(e.target.value)} placeholder="info@yourdomain.com" /></div>
+              <div className="ad-field">
+                <label>IMAP Password {service && <small style={{ fontWeight: 400 }}>(blank = use SMTP password)</small>}</label>
+                <div className="ad-input-wrap">
+                  <input className="ad-input" type={showImapPass ? 'text' : 'password'} value={imapPassword} onChange={e => setImapPassword(e.target.value)} />
+                  <button type="button" className="ad-eye" onClick={() => setShowImapPass(p => !p)}>
+                    {showImapPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
           <button className="ad-btn ad-btn-ghost" onClick={onClose}>Cancel</button>
           <button className="ad-btn ad-btn-primary" disabled={busy || !name.trim() || !senderEmail.trim()}
-            onClick={() => onSave({ name, senderEmail, senderName, smtpUsername, smtpPassword, smtpServer, smtpPort, smtpEncryption })}>
+            onClick={() => onSave({
+              name, senderEmail, senderName, smtpUsername, smtpPassword, smtpServer, smtpPort, smtpEncryption,
+              imapEnabled, imapServer, imapPort, imapUsername, imapPassword, imapUseSsl,
+            })}>
             {busy ? <Loader2 size={14} className="ad-spin" /> : null}
             {service ? 'Save Changes' : 'Create Service'}
           </button>
@@ -1435,6 +1705,170 @@ function AdminCreateServiceModal({ isDark, users, onClose, onSave }: {
           <button className="ad-btn ad-btn-primary" disabled={!name.trim() || !senderEmail.trim()} onClick={handleSave}>
             Create Service
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── WebhooksModal ─────────────────────────────────────────────────────────────
+function WebhooksModal({ service, api, isDark, onClose }: {
+  service: ServiceDto;
+  api: (method: string, path: string, body?: unknown) => Promise<unknown>;
+  isDark: boolean;
+  onClose: () => void;
+}) {
+  const [hooks, setHooks] = useState<WebhookDto[]>([]);
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api('GET', `/api/account/services/${service.id}/webhooks`) as WebhookDto[];
+      setHooks(data);
+    } catch { /* silent */ } finally { setLoading(false); }
+  }, [api, service.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const add = async () => {
+    if (!url.trim()) return;
+    setBusy(true); setErr(null);
+    try {
+      await api('POST', `/api/account/services/${service.id}/webhooks`, { url: url.trim() });
+      setUrl(''); await load();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Error');
+    } finally { setBusy(false); }
+  };
+
+  const toggle = async (id: number, active: boolean) => {
+    try {
+      await api('PATCH', `/api/account/services/${service.id}/webhooks/${id}`, { isActive: active });
+      await load();
+    } catch { /* silent */ }
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm('Delete this webhook?')) return;
+    try {
+      await api('DELETE', `/api/account/services/${service.id}/webhooks/${id}`);
+      await load();
+    } catch { /* silent */ }
+  };
+
+  const copy = (t: string) => navigator.clipboard.writeText(t).catch(() => {});
+
+  return (
+    <div className="ad-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={`ad-modal${isDark ? ' ad-dark' : ''}`} style={{ maxWidth: 560 }}>
+        <div className="ad-modal-head">
+          <h3>Webhooks — {service.name}</h3>
+          <button className="ad-icon-btn" onClick={onClose}><X size={16} /></button>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--ad-muted)', marginBottom: 14 }}>
+          External apps receive a POST notification when a new email arrives. Verify using the <code>X-Webhook-Signature</code> header (HMAC-SHA256).
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <input className="ad-input" style={{ flex: 1 }} value={url} onChange={e => setUrl(e.target.value)}
+            placeholder="https://your-app.com/webhooks/email-received" />
+          <button className="ad-btn ad-btn-primary" disabled={busy || !url.trim()} onClick={add}>
+            {busy ? <Loader2 size={14} className="ad-spin" /> : <Plus size={14} />} Add
+          </button>
+        </div>
+        {err && <div className="ad-alert err">{err}</div>}
+        {loading ? <div className="ad-empty"><Loader2 size={20} className="ad-spin" /></div> : (
+          <div className="ad-tmpl-list">
+            {hooks.length === 0 && <div className="ad-empty">No webhooks yet.</div>}
+            {hooks.map(h => (
+              <div key={h.id} className="ad-tmpl-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Bell size={13} />
+                  <span style={{ flex: 1, fontSize: 12, wordBreak: 'break-all' }}>{h.url}</span>
+                  <span className={`ad-badge ${h.isActive ? 'on' : 'off'}`}>{h.isActive ? 'Active' : 'Off'}</span>
+                </div>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--ad-muted)' }}>
+                  Secret: {h.secret}
+                  <button className="ad-icon-btn" style={{ marginLeft: 4 }} onClick={() => copy(h.secret)}><Copy size={11} /></button>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="ad-btn ad-btn-ghost ad-btn-sm" onClick={() => toggle(h.id, !h.isActive)}>
+                    {h.isActive ? 'Disable' : 'Enable'}
+                  </button>
+                  <button className="ad-btn ad-btn-danger ad-btn-sm" onClick={() => remove(h.id)}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="ad-section-label">External API (poll alternative)</div>
+        <div className="ad-code" style={{ fontSize: 11 }}>
+          {`GET /api/inbound/emails\nGET /api/inbound/unread-count\nHeader: X-Api-Key: ${service.apiKey.substring(0, 20)}...`}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          <button className="ad-btn ad-btn-ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── InboundDetailModal ──────────────────────────────────────────────────────
+function InboundDetailModal({ email, api, isDark, onClose, onMarkRead }: {
+  email: InboundEmailDto;
+  api: (method: string, path: string, body?: unknown) => Promise<unknown>;
+  isDark: boolean;
+  onClose: () => void;
+  onMarkRead: (id: number) => void;
+}) {
+  const [detail, setDetail] = useState<InboundEmailDto & { bodyText?: string; bodyHtml?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api('GET', `/api/account/inbound/emails/${email.id}`)
+      .then((res: { bodyText?: string; bodyHtml?: string; from?: string; fromName?: string; to?: string; subject?: string; bodyPreview?: string; receivedAt?: string; isRead?: boolean; id?: number; appName?: string }) => {
+        setDetail({
+          ...email,
+          bodyText: res.bodyText ?? undefined,
+          bodyHtml: res.bodyHtml ?? undefined,
+          fromAddress: res.from ?? email.fromAddress,
+          toAddress: res.to ?? email.toAddress,
+          subject: res.subject ?? email.subject,
+        });
+      })
+      .catch(() => setDetail(email))
+      .finally(() => setLoading(false));
+  }, [api, email]);
+
+  const d = detail ?? email;
+
+  return (
+    <div className="ad-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={`ad-modal${isDark ? ' ad-dark' : ''}`} style={{ maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="ad-modal-head">
+          <h3>{d.subject}</h3>
+          <button className="ad-icon-btn" onClick={onClose}><X size={16} /></button>
+        </div>
+        {loading ? <div className="ad-empty"><Loader2 size={20} className="ad-spin" /></div> : (
+          <>
+            <div style={{ fontSize: 13, marginBottom: 12 }}>
+              <div><strong>From:</strong> {d.fromName ? `${d.fromName} <${d.fromAddress}>` : d.fromAddress}</div>
+              <div><strong>To:</strong> {d.toAddress}</div>
+              <div style={{ color: 'var(--ad-muted)' }}><strong>Service:</strong> {d.appName} · {fmtDate(d.receivedAt)}</div>
+            </div>
+            <div className="ad-code" style={{ maxHeight: 400, whiteSpace: 'pre-wrap' }}>
+              {d.bodyText ?? d.bodyPreview ?? '(no body)'}
+            </div>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+          {!d.isRead && (
+            <button className="ad-btn ad-btn-primary" onClick={() => onMarkRead(d.id)}>Mark as read</button>
+          )}
+          <button className="ad-btn ad-btn-ghost" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>

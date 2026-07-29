@@ -40,15 +40,62 @@
         <member name="M:EmailApi.Controllers.AccountController.DeleteTemplate(System.Int32,System.Int32)">
             <summary>DELETE /api/account/services/{id}/templates/{tid}</summary>
         </member>
-        <member name="M:EmailApi.Controllers.AiChatController.Chat(EmailApi.Models.AiChatRequest)">
-             <summary>
-             AI chat endpoint. Accepts a user message + conversation history, asks Gemini,
-             and — if Gemini wants to send an email — executes it via the local email service.
-            
-             Auth:
-               - Email API key: X-Api-Key header OR emailApiKey JSON field.
-               - Gemini API key: appsettings.json "Gemini:ApiKey" OR X-Gemini-Key header OR geminiApiKey JSON field.
-             </summary>
+        <member name="M:EmailApi.Controllers.AccountController.GetMyLogs(System.Int32,System.Int32,System.String,System.String,System.String)">
+            <summary>GET /api/account/logs — returns paginated logs for the current user's services.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.GetMyInboundEmails(System.Nullable{System.Int32},System.Int32,System.Int32,System.Nullable{System.Boolean})">
+            <summary>GET /api/account/inbound/emails</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.GetMyInboundEmail(System.Int64)">
+            <summary>GET /api/account/inbound/emails/{id}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.MarkMyInboundRead(System.Int64,EmailApi.Controllers.AccountController.InboundMarkReadRequest)">
+            <summary>PATCH /api/account/inbound/emails/{id}/read</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.ListWebhooks(System.Int32)">
+            <summary>GET /api/account/services/{id}/webhooks</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.CreateWebhook(System.Int32,EmailApi.Controllers.AccountController.WebhookRequest)">
+            <summary>POST /api/account/services/{id}/webhooks</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.UpdateWebhook(System.Int32,System.Int32,EmailApi.Controllers.AccountController.WebhookUpdateRequest)">
+            <summary>PATCH /api/account/services/{id}/webhooks/{wid}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.DeleteWebhook(System.Int32,System.Int32)">
+            <summary>DELETE /api/account/services/{id}/webhooks/{wid}</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.RegenerateWebhookSecret(System.Int32,System.Int32)">
+            <summary>POST /api/account/services/{id}/webhooks/{wid}/regenerate-secret</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminGetInboundEmails(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Boolean},System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/inbound/emails — all inbound emails (superadmin).</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminListUsers(System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/users — list all users.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateUserStatus(System.Int32,EmailApi.Controllers.AccountController.AdminUserStatusRequest)">
+            <summary>PATCH /api/account/admin/users/{id}/status — activate or deactivate a user.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateUserRole(System.Int32,EmailApi.Controllers.AccountController.AdminUserRoleRequest)">
+            <summary>PATCH /api/account/admin/users/{id}/role — change a user's role.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminGetLogs(System.Nullable{System.Int32},System.Nullable{System.Int32},System.String,System.String,System.String,System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/logs — all logs with optional filters.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminListServices(System.Nullable{System.Int32},System.Int32,System.Int32)">
+            <summary>GET /api/account/admin/services — all services across all users.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminCreateService(EmailApi.Controllers.AccountController.AdminCreateServiceRequest)">
+            <summary>POST /api/account/admin/services — create a service for any user.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminUpdateService(System.Int32,EmailApi.Controllers.AccountController.UpdateServiceRequest)">
+            <summary>PATCH /api/account/admin/services/{id} — update any service.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminDeleteService(System.Int32)">
+            <summary>DELETE /api/account/admin/services/{id} — deactivate any service.</summary>
+        </member>
+        <member name="M:EmailApi.Controllers.AccountController.AdminRegenerateKey(System.Int32)">
+            <summary>POST /api/account/admin/services/{id}/regenerate-key — regenerate API key for any service.</summary>
         </member>
         <member name="M:EmailApi.Controllers.EmailController.SendEmail(EmailApi.Models.SendEmailForm)">
              <summary>
@@ -87,25 +134,23 @@
             Legacy JSON endpoint kept for backward compatibility. Also requires X-Api-Key.
             </summary>
         </member>
-        <member name="T:EmailApi.Models.AiChatRequest">
+        <member name="T:EmailApi.Controllers.InboundController">
             <summary>
-            Request body for POST /api/ai/chat — the AI-friendly chat endpoint.
+            Public inbound email API for external apps.
+            Authenticate with the service's X-Api-Key header (same key used for sending).
             </summary>
         </member>
-        <member name="P:EmailApi.Models.AiChatRequest.Message">
-            <summary>The latest user message to process.</summary>
+        <member name="M:EmailApi.Controllers.InboundController.ListEmails(System.Int32,System.Int32,System.Nullable{System.Boolean},System.String,System.String)">
+            <summary>GET /api/inbound/emails — list received emails for this service.</summary>
         </member>
-        <member name="P:EmailApi.Models.AiChatRequest.History">
-            <summary>Previous conversation turns (oldest first).</summary>
+        <member name="M:EmailApi.Controllers.InboundController.GetEmail(System.Int64)">
+            <summary>GET /api/inbound/emails/{id} — full email details.</summary>
         </member>
-        <member name="P:EmailApi.Models.AiChatRequest.GeminiApiKey">
-            <summary>Optional Gemini API key — used when the server has none configured.</summary>
+        <member name="M:EmailApi.Controllers.InboundController.MarkRead(System.Int64,EmailApi.Controllers.InboundController.MarkReadRequest)">
+            <summary>PATCH /api/inbound/emails/{id}/read — mark email as read.</summary>
         </member>
-        <member name="P:EmailApi.Models.AiChatRequest.EmailApiKey">
-            <summary>Optional email API key — alternative to the X-Api-Key header.</summary>
-        </member>
-        <member name="P:EmailApi.Models.AiChatHistoryItem.Role">
-            <summary>"user" or "assistant"</summary>
+        <member name="M:EmailApi.Controllers.InboundController.UnreadCount">
+            <summary>GET /api/inbound/unread-count — quick poll helper for external apps.</summary>
         </member>
         <member name="P:EmailApi.Models.AppEntity.UserId">
             <summary>Owner account. Null for legacy admin-created apps.</summary>
@@ -130,6 +175,9 @@
         </member>
         <member name="P:EmailApi.Models.AppEntity.SmtpEncryption">
             <summary>Encryption method: "TLS" (STARTTLS), "SSL" (implicit), or "None".</summary>
+        </member>
+        <member name="P:EmailApi.Models.AppEntity.LastImapUid">
+            <summary>Last processed IMAP UID — used to fetch only new messages.</summary>
         </member>
         <member name="T:EmailApi.Models.SendAiEmailRequest">
             <summary>
@@ -232,6 +280,9 @@
             Optional API key (alternative to the X-Api-Key header).
             </summary>
         </member>
+        <member name="P:EmailApi.Models.UserEntity.Role">
+            <summary>User role: "user" (default) or "superadmin".</summary>
+        </member>
         <member name="T:EmailApi.Services.ServiceSmtpConfig">
             <summary>
             Per-service SMTP overrides. Any null field falls back to the global SmtpConfig.
@@ -245,6 +296,17 @@
         </member>
         <member name="P:EmailApi.Services.ServiceSmtpConfig.Encryption">
             <summary>"TLS", "SSL", or "None". Null = use global setting.</summary>
+        </member>
+        <member name="M:EmailApi.Services.IImapMailboxService.PollAppMailboxAsync(EmailApi.Models.AppEntity,System.Threading.CancellationToken)">
+            <summary>Poll one app's mailbox and return IDs of newly stored incoming emails.</summary>
+        </member>
+        <member name="M:EmailApi.Services.ImapMailboxService.NormalizeMailHost(System.String)">
+            <summary>Strip http(s):// and paths — IMAP host must be a bare hostname.</summary>
+        </member>
+        <member name="T:EmailApi.Services.ImapPollingService">
+            <summary>
+            Background worker that polls IMAP mailboxes for all active services with ImapEnabled=true.
+            </summary>
         </member>
     </members>
 </doc>

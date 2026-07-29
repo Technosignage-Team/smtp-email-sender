@@ -92,3 +92,8 @@ E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish Emao
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\publish EmaolSender\publish EmailSender\publish\EmailSenderApi.staticwebassets.endpoints.json
 E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\EmailSenderApi.xml
 E:\Email sender\smtp-email-sender\EmailSenderApp\obj\Release\net8.0\EmailSenderApi.xml
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\BouncyCastle.Cryptography.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\MailKit.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\MimeKit.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\System.Security.Cryptography.Pkcs.dll
+E:\Email sender\smtp-email-sender\EmailSenderApp\bin\Release\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll

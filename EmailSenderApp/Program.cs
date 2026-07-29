@@ -61,9 +61,14 @@ builder.Services.AddDbContext<EmailSenderDbContext>(opt =>
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IImapMailboxService, ImapMailboxService>();
+builder.Services.AddScoped<IWebhookDeliveryService, WebhookDeliveryService>();
 
-// HttpClient for outbound calls (Gemini API)
-builder.Services.AddHttpClient();
+// IMAP background polling
+builder.Services.AddHostedService<ImapPollingService>();
+
+// HttpClient for outbound calls (webhooks)
+builder.Services.AddHttpClient("webhooks");
 
 // Configure CORS for the frontend.
 // Allowed origins are loaded from appsettings.json ("Cors:AllowedOrigins").
